@@ -8,3 +8,5 @@ opsworks/clickhouse/vendor/
 opsworks/clickhouse/.bundle
 
 opsworks/clickhouse/script.sh
+
+*.gz
