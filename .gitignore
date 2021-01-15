@@ -2,3 +2,9 @@
 opsworks/.DS_Store
 
 .DS_Store
+
+opsworks/clickhouse/vendor/
+
+opsworks/clickhouse/.bundle
+
+opsworks/clickhouse/script.sh
