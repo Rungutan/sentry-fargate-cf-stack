@@ -1,0 +1,28 @@
+DEPENDENCIES
+  clickhouse_stack
+    path: .
+    metadata: true
+
+GRAPH
+  build-essential (8.0.4)
+    mingw (>= 1.1)
+    seven_zip (>= 0.0.0)
+  logrotate (2.2.3)
+  mingw (2.1.1)
+    seven_zip (>= 0.0.0)
+  ntp (3.5.6)
+  ohai (5.3.0)
+  poise (2.8.2)
+  poise-service (1.5.2)
+    poise (~> 2.0)
+  seven_zip (2.0.2)
+    windows (>= 1.2.2)
+  clickhouse_stack (1.0.0)
+    build-essential (~> 8.0.3)
+    logrotate (~> 2.2.0)
+    ntp (~> 3.5.1)
+    poise-service (~> 1.5.2)
+    seven_zip (~> 2.0.2)
+    windows (~> 3.4.0)
+  windows (3.4.4)
+    ohai (>= 4.0.0)

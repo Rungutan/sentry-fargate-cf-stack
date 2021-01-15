@@ -1,0 +1,12 @@
+# frozen_string_literal: true
+
+source 'https://rubygems.org'
+
+ruby '>= 2.1.7'
+
+gem 'berkshelf', '~> 6.3.4'
+
+group :development do
+  gem 'rake', '~> 12.0'
+  gem 'rubocop', '~> 0.47', require: false
+end

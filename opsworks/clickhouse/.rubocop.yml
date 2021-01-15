@@ -1,0 +1,25 @@
+AllCops:
+  Exclude:
+    - 'Rakefile'
+  DisplayCopNames: true
+
+Documentation:
+  Enabled: false
+
+ParameterAlignment:
+  Enabled: false
+
+Encoding:
+  Enabled: false
+
+LineLength:
+  Max: 300
+
+StringLiterals:
+  Enabled: false
+
+BlockLength:
+  Max: 100
+  Exclude:
+    - 'spec/**/*'
+
