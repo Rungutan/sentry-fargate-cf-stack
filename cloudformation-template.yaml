@@ -177,7 +177,7 @@ Parameters:
   # OpsWorks ClickHouse variables
   ClickHouseCookbookUrl:
     Type: String
-    Default: https://github.com/Rungutan/sentry-performance-monitoring/releases/download/0.0.1/clickhouse-69b1b8b.tar.gz
+    Default: https://github.com/Rungutan/sentry-performance-monitoring/releases/download/1.0.0/clickhouse-1.0.0.tar.gz
     
   ClickHouseInstanceType:
     Type: String
@@ -404,6 +404,7 @@ Metadata:
           - SnubaImage
           - RelayImage
           - BashImage
+          - ClickHouseImage
           - MinCountSnubaApi
           - MaxCountSnubaApi 
           - MinCountSentryWeb
@@ -4185,7 +4186,7 @@ Resources:
           SecurityGroups:
             - Ref: Ec2SecurityGroup
 
-  TaskDefinitionClickHouseBootstraP:
+  TaskDefinitionClickHouseBootstrap:
     Type: AWS::ECS::TaskDefinition
     Properties:
       NetworkMode: awsvpc
@@ -4204,11 +4205,11 @@ Resources:
           Entrypoint: ["/bin/bash"]
           Command:
             - "-ec"
-            - >-
-              for tbl in "errors groupassignee groupedmessage outcomes_hourly outcomes_mv_hourly outcomes_raw sentry sessions_hourly sessions_hourly_mv sessions_raw transactions"; do
-                clickhouse-client --database=default --host=${ElbClickHouse.DNSName} --port=9000 --query="DROP TABLE IF EXISTS ${!tbl}_dist";
-                clickhouse-client --database=default --host=${ElbClickHouse.DNSName} --port=9000 --query="CREATE TABLE ${!tbl}_dist AS ${!tbl}_local ENGINE = Distributed('sentry_clickhouse', default, ${!tbl}_local, rand())";
-              done
+            - Fn::Sub: |
+                for tbl in errors groupassignee groupedmessage outcomes_hourly outcomes_mv_hourly outcomes_raw sentry sessions_hourly sessions_hourly_mv sessions_raw transactions; do
+                  clickhouse-client --database=default --host=${ElbClickHouse.DNSName} --port=9000 --query="DROP TABLE IF EXISTS ${!tbl}_dist"
+                  clickhouse-client --database=default --host=${ElbClickHouse.DNSName} --port=9000 --query="CREATE TABLE ${!tbl}_dist AS ${!tbl}_local ENGINE = Distributed('sentry_clickhouse', default, ${!tbl}_local, rand())"
+                done
           Secrets:
             - Name: POSTGRES_PASSWORD
               ValueFrom:
@@ -4341,7 +4342,7 @@ Resources:
                             'assignPublicIp': 'DISABLED'
                         }
                     },
-                    taskDefinition="${TaskDefinitionClickHouseBootstraP.TaskDefinitionArn}"
+                    taskDefinition="${TaskDefinitionClickHouseBootstrap.TaskDefinitionArn}"
                   )
                   if "failures" in response and len(response["failures"]) > 0:
                     print(response)
