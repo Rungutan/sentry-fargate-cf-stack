@@ -1,0 +1,1 @@
+FROM	yandex/clickhouse-client:20.10.3.30
