@@ -4,9 +4,9 @@ Parameters:
 
   # VPC variables  
   VPCSubnetCidrBlock:
-    Description: 172.81.0.0/16 = 172.81.0.0-172.81.255.255 = 256 Subnets = 65534 hosts
+    Description: 172.80.0.0/16 = 172.80.0.0-172.80.255.255 = 256 Subnets = 65534 hosts
     Type: String
-    Default: 172.81.0.0/16
+    Default: 172.80.0.0/16
     MinLength: '10'
     MaxLength: '18'
     AllowedPattern: "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{1,2})"
@@ -33,37 +33,37 @@ Parameters:
     - c
   PublicSubnetCidrBlock1:
     Type: String
-    Default: 172.81.0.0/20
+    Default: 172.80.0.0/20
     MinLength: '10'
     MaxLength: '18'
     AllowedPattern: "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{1,2})"
   PublicSubnetCidrBlock2:
     Type: String
-    Default: 172.81.16.0/20
+    Default: 172.80.16.0/20
     MinLength: '10'
     MaxLength: '18'
     AllowedPattern: "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{1,2})"
   PublicSubnetCidrBlock3:
     Type: String
-    Default: 172.81.32.0/20
+    Default: 172.80.32.0/20
     MinLength: '10'
     MaxLength: '18'
     AllowedPattern: "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{1,2})"
   PrivateSubnetCidrBlock1:
     Type: String
-    Default: 172.81.48.0/20
+    Default: 172.80.48.0/20
     MinLength: '10'
     MaxLength: '18'
     AllowedPattern: "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{1,2})"
   PrivateSubnetCidrBlock2:
     Type: String
-    Default: 172.81.64.0/20
+    Default: 172.80.64.0/20
     MinLength: '10'
     MaxLength: '18'
     AllowedPattern: "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{1,2})"
   PrivateSubnetCidrBlock3:
     Type: String
-    Default: 172.81.80.0/20
+    Default: 172.80.80.0/20
     MinLength: '10'
     MaxLength: '18'
     AllowedPattern: "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{1,2})"
@@ -205,19 +205,28 @@ Parameters:
 
   SentryImage:
     Type: String
-    Default: rungutancommunity/sentry-base:latest
+    Default: public.ecr.aws/x7u7j5v7/sentry-base:latest
+    Description: Public ECR = public.ecr.aws/x7u7j5v7/sentry-base:latest <AND> Docker HUB = rungutancommunity/sentry-base:latest
 
   SnubaImage:
     Type: String
-    Default: rungutancommunity/sentry-snuba:latest
+    Default: public.ecr.aws/x7u7j5v7/sentry-snuba:latest
+    Description: Public ECR = public.ecr.aws/x7u7j5v7/sentry-snuba:latest <AND> Docker HUB = rungutancommunity/sentry-snuba:latest
 
   RelayImage:
     Type: String
-    Default: rungutancommunity/sentry-relay:latest
+    Default: public.ecr.aws/x7u7j5v7/sentry-relay:latest
+    Description: Public ECR = public.ecr.aws/x7u7j5v7/sentry-relay:latest <AND> Docker HUB = rungutancommunity/sentry-relay:latest
 
   BashImage:
     Type: String
-    Default: bash:latest
+    Default: public.ecr.aws/x7u7j5v7/bash:latest
+    Description: Public ECR = public.ecr.aws/x7u7j5v7/bash:latest <AND> Docker HUB = rungutancommunity/bash:latest
+
+  ClickHouseImage:
+    Type: String
+    Default: public.ecr.aws/x7u7j5v7/clickhouse-client:latest
+    Description: Public ECR = public.ecr.aws/x7u7j5v7/clickhouse-client:latest <AND> Docker HUB = rungutancommunity/clickhouse-client:latest
 
   MinCountSnubaApi:
     Type: String
@@ -1062,7 +1071,7 @@ Resources:
             delete.topic.enable = {event['ResourceProperties']['delete_topic_enable']}
             default.replication.factor = {event['ResourceProperties']['default_replication_factor']}
             min.insync.replicas = {event['ResourceProperties']['min_insync_replicas']}
-            num.network.threads =  {event['ResourceProperties']['num_network_threads']}
+            num.network.threads = {event['ResourceProperties']['num_network_threads']}
             num.partitions = {event['ResourceProperties']['num_partitions']}
             """
 
@@ -4176,6 +4185,186 @@ Resources:
           SecurityGroups:
             - Ref: Ec2SecurityGroup
 
+  TaskDefinitionClickHouseBootstraP:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      NetworkMode: awsvpc
+      RequiresCompatibilities:
+        - FARGATE
+      Cpu: "1024"
+      Memory: 2GB
+      ExecutionRoleArn:
+        Fn::GetAtt: ExecutionRole.Arn
+      TaskRoleArn:
+        Fn::GetAtt: TaskRole.Arn
+      ContainerDefinitions:
+        - Name: clickhouse-client
+          Image:
+            Ref: ClickHouseImage
+          Entrypoint: ["/bin/bash"]
+          Command:
+            - "-ec"
+            - >-
+              for tbl in "errors groupassignee groupedmessage outcomes_hourly outcomes_mv_hourly outcomes_raw sentry sessions_hourly sessions_hourly_mv sessions_raw transactions"; do
+                clickhouse-client --database=default --host=${ElbClickHouse.DNSName} --port=9000 --query="DROP TABLE IF EXISTS ${!tbl}_dist";
+                clickhouse-client --database=default --host=${ElbClickHouse.DNSName} --port=9000 --query="CREATE TABLE ${!tbl}_dist AS ${!tbl}_local ENGINE = Distributed('sentry_clickhouse', default, ${!tbl}_local, rand())";
+              done
+          Secrets:
+            - Name: POSTGRES_PASSWORD
+              ValueFrom:
+                Ref: SecretPostgresPassword
+          Environment:
+            - Name: AWS_DEFAULT_REGION
+              Value:
+                Ref: AWS::Region
+            - name: C_FORCE_ROOT
+              Value: "true"
+            - Name: SNUBA
+              Value: 
+                Fn::Sub: http://${SnubaApiDnsRecord}
+            - Name: REDIS_HOST
+              Value:
+                Fn::GetAtt: ElastiCacheNode.RedisEndpoint.Address
+            - Name: REDIS_PORT
+              Value: "6379"
+            - Name: CLICKHOUSE_HOST
+              Value:
+                Fn::GetAtt: ElbClickHouse.DNSName 
+            - Name: KAFKA_BROKER_1
+              Value:
+                Fn::GetAtt: KafkaGetBrokersLambdaResult.KafkaBroker1
+            - Name: KAFKA_BROKER_2
+              Value:
+                Fn::GetAtt: KafkaGetBrokersLambdaResult.KafkaBroker2
+            - Name: KAFKA_BROKER_3
+              Value:
+                Fn::GetAtt: KafkaGetBrokersLambdaResult.KafkaBroker3
+            - Name: POSTGRES_HOST
+              Value:
+                Fn::GetAtt: RDSInstance.Endpoint.Address
+            - Name: POSTGRES_PORT
+              Value: "5432"
+            - Name: POSTGRES_DB
+              Value:
+                Ref: PostgresDbName
+            - Name: POSTGRES_USER
+              Value:
+                Ref: PostgresDbUsername
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-region:
+                Ref: AWS::Region
+              awslogs-group:
+                Ref: LogGroup
+              awslogs-stream-prefix: ecs
+
+  ClickHouseBootstrapLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal: {Service: [lambda.amazonaws.com]}
+          Action: ['sts:AssumeRole']
+      Policies:
+      - PolicyName:
+          Fn::Sub: ${AWS::StackName}-Ecs
+        PolicyDocument:
+          Statement:
+          - Effect: Allow
+            Action:
+            - ecs:*
+            Resource: '*'
+      - PolicyName:
+          Fn::Sub: ${AWS::StackName}-CloudWatch
+        PolicyDocument:
+          Statement:
+          - Effect: Allow
+            Action:
+            - logs:*
+            - cloudwatch:*
+            Resource: '*'
+      - PolicyName:
+          Fn::Sub: ${AWS::StackName}-SSM
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action:
+                - secretsmanager:GetSecretValue
+              Resource:
+                - Ref: SecretPostgresPassword
+      - PolicyName:
+          Fn::Sub: ${AWS::StackName}-IAM
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action:
+                - iam:PassRole
+              Resource:
+                - Fn::GetAtt: ExecutionRole.Arn
+                - Fn::GetAtt: TaskRole.Arn
+
+  ClickHouseBootstrapLambdaFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      Handler: index.lambda_handler
+      Runtime: python3.8
+      Role:
+        Fn::GetAtt: ClickHouseBootstrapLambdaRole.Arn
+      Code:
+        ZipFile:
+          Fn::Sub: |
+            import boto3
+            from botocore.exceptions import ClientError
+            import json
+            import cfnresponse
+            from datetime import datetime
+
+            def lambda_handler(event, context):
+              data = {}
+
+              try:
+                ecs_client = boto3.client('ecs',region_name="${AWS::Region}")
+
+                if event['RequestType'] == 'Create':
+                  
+                  response = ecs_client.run_task(
+                    cluster='${ClusterWorkers}',
+                    networkConfiguration={
+                      'awsvpcConfiguration': {
+                        'subnets': ["${PrivateSubnet1}","${PrivateSubnet2}","${PrivateSubnet3}"],
+                            'securityGroups': [ "${Ec2SecurityGroup}"],
+                            'assignPublicIp': 'DISABLED'
+                        }
+                    },
+                    taskDefinition="${TaskDefinitionClickHouseBootstraP.TaskDefinitionArn}"
+                  )
+                  if "failures" in response and len(response["failures"]) > 0:
+                    print(response)
+                    data["Reason"] = "NOT_OK"
+                    cfnresponse.send(event, context, cfnresponse.FAILED, data)
+
+                else:
+                  data["Reason"] = "OK"
+                  
+                cfnresponse.send(event, context, cfnresponse.SUCCESS, data)
+              except Exception as e:
+                print(str(e))
+                data["Reason"] = str(e)
+                cfnresponse.send(event, context, cfnresponse.FAILED, data)
+
+  ClickHouseBoostrapLambdaResult:
+    Type: Custom::ClickHouseBootstrap
+    Properties:
+      ServiceToken:
+        Fn::GetAtt: ClickHouseBootstrapLambdaFunction.Arn
+      ClickHouseImage:
+        Ref: ClickHouseImage
+
   TaskDefinitionSentryMigration:
     Type: AWS::ECS::TaskDefinition
     Properties:
@@ -4387,11 +4576,191 @@ Resources:
 
   SentryMigrationLambdaResult:
     Type: Custom::SentryMigration
+    DependsOn: ClickHouseBoostrapLambdaResult
     Properties:
       ServiceToken:
         Fn::GetAtt: SentryMigrationLambdaFunction.Arn
       SentryImage:
         Ref: SentryImage
+
+  TaskDefinitionSnubaBootstrap:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      NetworkMode: awsvpc
+      RequiresCompatibilities:
+        - FARGATE
+      Cpu: "1024"
+      Memory: 2GB
+      ExecutionRoleArn:
+        Fn::GetAtt: ExecutionRole.Arn
+      TaskRoleArn:
+        Fn::GetAtt: TaskRole.Arn
+      ContainerDefinitions:
+        - Name: sentry-snuba-bootstrap
+          Image:
+            Ref: SnubaImage
+          Entrypoint: ["snuba", "bootstrap", "--force"]
+          Secrets:
+            - Name: POSTGRES_PASSWORD
+              ValueFrom:
+                Ref: SecretPostgresPassword
+          Environment:
+            - Name: AWS_DEFAULT_REGION
+              Value:
+                Ref: AWS::Region
+            - Name: REDIS_HOST
+              Value:
+                Fn::GetAtt: ElastiCacheNode.RedisEndpoint.Address
+            - Name: REDIS_PORT
+              Value: "6379"
+            - Name: CLICKHOUSE_HOST
+              Value:
+                Fn::GetAtt: ElbClickHouse.DNSName
+            - Name: CLICKHOUSE_PORT
+              Value: "9000"
+            - Name: CLICKHOUSE_HTTP_PORT
+              Value: "8123"
+            - Name: CLICKHOUSE_SINGLE_NODE
+              Value: "true"
+            - Name: CLICKHOUSE_DATABASE
+              Value: "default"
+            - Name: KAFKA_BROKER_1
+              Value:
+                Fn::GetAtt: KafkaGetBrokersLambdaResult.KafkaBroker1
+            - Name: KAFKA_BROKER_2
+              Value:
+                Fn::GetAtt: KafkaGetBrokersLambdaResult.KafkaBroker2
+            - Name: KAFKA_BROKER_3
+              Value:
+                Fn::GetAtt: KafkaGetBrokersLambdaResult.KafkaBroker3
+            - Name: DEFAULT_BROKERS
+              Value:
+                Fn::GetAtt: KafkaGetBrokersLambdaResult.BootstrapBrokerString
+            - Name: POSTGRES_HOST
+              Value:
+                Fn::GetAtt: RDSInstance.Endpoint.Address
+            - Name: POSTGRES_PORT
+              Value: "5432"
+            - Name: POSTGRES_DB
+              Value:
+                Ref: PostgresDbName
+            - Name: POSTGRES_USER
+              Value:
+                Ref: PostgresDbUsername
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-region:
+                Ref: AWS::Region
+              awslogs-group:
+                Ref: LogGroup
+              awslogs-stream-prefix: ecs
+
+  SnubaBootstrapLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal: {Service: [lambda.amazonaws.com]}
+          Action: ['sts:AssumeRole']
+      Policies:
+      - PolicyName:
+          Fn::Sub: ${AWS::StackName}-Ecs
+        PolicyDocument:
+          Statement:
+          - Effect: Allow
+            Action:
+            - ecs:*
+            Resource: '*'
+      - PolicyName:
+          Fn::Sub: ${AWS::StackName}-CloudWatch
+        PolicyDocument:
+          Statement:
+          - Effect: Allow
+            Action:
+            - logs:*
+            - cloudwatch:*
+            Resource: '*'
+      - PolicyName:
+          Fn::Sub: ${AWS::StackName}-SSM
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action:
+                - secretsmanager:GetSecretValue
+              Resource:
+                - Ref: SecretPostgresPassword
+      - PolicyName:
+          Fn::Sub: ${AWS::StackName}-IAM
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action:
+                - iam:PassRole
+              Resource:
+                - Fn::GetAtt: ExecutionRole.Arn
+                - Fn::GetAtt: TaskRole.Arn
+
+  SnubaBootstrapLambdaFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      Handler: index.lambda_handler
+      Runtime: python3.8
+      Role:
+        Fn::GetAtt: SnubaBootstrapLambdaRole.Arn
+      Code:
+        ZipFile:
+          Fn::Sub: |
+            import boto3
+            from botocore.exceptions import ClientError
+            import json
+            import cfnresponse
+            from datetime import datetime
+
+            def lambda_handler(event, context):
+              data = {}
+
+              try:
+                ecs_client = boto3.client('ecs',region_name="${AWS::Region}")
+
+                if event['RequestType'] == 'Create':
+                  
+                  response = ecs_client.run_task(
+                    cluster='${ClusterWorkers}',
+                    networkConfiguration={
+                      'awsvpcConfiguration': {
+                        'subnets': ["${PrivateSubnet1}","${PrivateSubnet2}","${PrivateSubnet3}"],
+                            'securityGroups': [ "${Ec2SecurityGroup}"],
+                            'assignPublicIp': 'DISABLED'
+                        }
+                    },
+                    taskDefinition="${TaskDefinitionSnubaBootstrap.TaskDefinitionArn}"
+                  )
+                  if "failures" in response and len(response["failures"]) > 0:
+                    print(response)
+                    data["Reason"] = "NOT_OK"
+                    cfnresponse.send(event, context, cfnresponse.FAILED, data)
+
+                else:
+                  data["Reason"] = "OK"
+                  
+                cfnresponse.send(event, context, cfnresponse.SUCCESS, data)
+              except Exception as e:
+                print(str(e))
+                data["Reason"] = str(e)
+                cfnresponse.send(event, context, cfnresponse.FAILED, data)
+
+  SnubaBootstrapLambdaResult:
+    Type: Custom::SnubaBootstrap
+    DependsOn: SentryMigrationLambdaResult
+    Properties:
+      ServiceToken:
+        Fn::GetAtt: SnubaBootstrapLambdaFunction.Arn
+
 
   TaskDefinitionSnubaMigrations:
     Type: AWS::ECS::TaskDefinition
@@ -4566,11 +4935,9 @@ Resources:
 
   SnubaMigrationsLambdaResult:
     Type: Custom::SnubaMigrations
+    DependsOn: SnubaBootstrapLambdaResult
     Properties:
       ServiceToken:
         Fn::GetAtt: SnubaMigrationsLambdaFunction.Arn
-      SentryImage:
-        Ref: SentryImage
-
-
-
+      SnubaImage:
+        Ref: SnubaImage
