@@ -1,8 +1,8 @@
 #!/bin/bash
 
 set -e
-
-package_file=clickhouse-$1
+tag=$1
+package_file=clickhouse-${tag}.tar.gz
 
 rm -f script.sh
 rm -f *.tar.gz
