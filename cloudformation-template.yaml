@@ -1,0 +1,4576 @@
+Description: Launch complete Sentry stack into new VPC
+
+Parameters:
+
+  # VPC variables  
+  VPCSubnetCidrBlock:
+    Description: 172.81.0.0/16 = 172.81.0.0-172.81.255.255 = 256 Subnets = 65534 hosts
+    Type: String
+    Default: 172.81.0.0/16
+    MinLength: '10'
+    MaxLength: '18'
+    AllowedPattern: "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{1,2})"
+  AvailabilityZone1:
+    Type: String
+    Default: a
+    AllowedValues:
+    - a
+    - b
+    - c
+  AvailabilityZone2:
+    Type: String
+    Default: b
+    AllowedValues:
+    - a
+    - b
+    - c
+  AvailabilityZone3:
+    Type: String
+    Default: c
+    AllowedValues:
+    - a
+    - b
+    - c
+  PublicSubnetCidrBlock1:
+    Type: String
+    Default: 172.81.0.0/20
+    MinLength: '10'
+    MaxLength: '18'
+    AllowedPattern: "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{1,2})"
+  PublicSubnetCidrBlock2:
+    Type: String
+    Default: 172.81.16.0/20
+    MinLength: '10'
+    MaxLength: '18'
+    AllowedPattern: "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{1,2})"
+  PublicSubnetCidrBlock3:
+    Type: String
+    Default: 172.81.32.0/20
+    MinLength: '10'
+    MaxLength: '18'
+    AllowedPattern: "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{1,2})"
+  PrivateSubnetCidrBlock1:
+    Type: String
+    Default: 172.81.48.0/20
+    MinLength: '10'
+    MaxLength: '18'
+    AllowedPattern: "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{1,2})"
+  PrivateSubnetCidrBlock2:
+    Type: String
+    Default: 172.81.64.0/20
+    MinLength: '10'
+    MaxLength: '18'
+    AllowedPattern: "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{1,2})"
+  PrivateSubnetCidrBlock3:
+    Type: String
+    Default: 172.81.80.0/20
+    MinLength: '10'
+    MaxLength: '18'
+    AllowedPattern: "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{1,2})"
+  
+  # Kafka variables
+  KafkaInstanceType:
+    Type: String
+    Default: 'kafka.t3.small'
+    AllowedValues:
+    - kafka.t3.small
+    - kafka.m5.large
+    - kafka.m5.xlarge
+    - kafka.m5.2xlarge
+    - kafka.m5.4xlarge
+    - kafka.m5.8xlage
+    - kafka.m5.12xlarge
+    - kafka.m5.16xlarge
+    - kafka.m5.24xlarge
+
+  KafkaVersion:
+    Type: String
+    Default: '2.6.0'
+    AllowedValues:
+      - "2.2.1"
+      - "2.3.1"
+      - "2.4.1.1"
+      - "2.5.1"
+      - "2.6.0"
+      - "2.7.0"
+
+  KafkaInstanceRootVolumeSize:
+    Type: String
+    Default: '100'
+    Description: Size in GB of the root volume for Kafka instances
+
+  # RDS Postres variables
+  PostgresDbName:
+    Default: "sentry"
+    Type: String
+
+  PostgresDbUsername:
+    Default: "sentry"
+    Type: String
+
+  PostgresDbPassword:
+    Type: String
+    NoEcho: true
+    Default: "Sentry123!"
+
+  PostgresAllocatedStorage:
+    Type: String
+    Default: "20"
+
+  PostgresMaxAllocatedStorage:
+    Type: String
+    Default: "1000"
+
+  PostgresDbInstanceClass:
+    Type: String
+    Default: db.t2.medium
+    AllowedValues:
+    - db.t2.small
+    - db.t2.medium
+    - db.t3.small
+    - db.t3.medium
+    - db.r3.large
+    - db.r3.xlarge
+    - db.r3.2xlarge
+    - db.r3.4xlarge
+    - db.r3.8xlarge
+    - db.r4.large
+    - db.r4.xlarge
+    - db.r4.2xlarge
+    - db.r4.4xlarge
+    - db.r4.8xlarge
+    - db.r4.16xlarge
+    - db.r5.large
+    - db.r5.xlarge
+    - db.r5.2xlarge
+    - db.r5.4xlarge
+    - db.r5.12xlarge
+    - db.m5.large
+    - db.m5.xlarge
+    - db.m5.2xlarge
+    - db.m5.4xlarge
+    - db.m5.12xlarge
+    - db.m4.large
+    - db.m4.xlarge
+    - db.m4.2xlarge
+    - db.m4.4xlarge
+    - db.m4.10xlarge
+
+  # ElastiCache Redis variables
+  ElastiCacheInstanceClass:
+    Type: String
+    Default: cache.t2.medium
+    AllowedValues:
+    - cache.t2.medium
+    - cache.t3.medium
+    - cache.m5.large
+    - cache.m5.xlarge
+    - cache.m5.2xlarge
+    - cache.m5.4xlarge
+    - cache.m5.12xlarge
+    - cache.m4.large
+    - cache.m4.xlarge
+    - cache.m4.2xlarge
+    - cache.m4.4xlarge
+    - cache.m4.10xlarge
+
+  # OpsWorks ClickHouse variables
+  ClickHouseCookbookUrl:
+    Type: String
+    Default: https://github.com/Rungutan/sentry-performance-monitoring/releases/download/0.0.1/clickhouse-69b1b8b.tar.gz
+    
+  ClickHouseInstanceType:
+    Type: String
+    Default: 'c4.xlarge'
+    AllowedValues:
+    - c4.large
+    - c4.xlarge
+    - c4.2xlarge
+    - c4.4xlarge
+    - c4.8xlarge
+    - c5.large
+    - c5.xlarge
+    - c5.2xlarge
+    - c5.4xlarge
+    - c5.9xlarge
+
+  ClickHouseInstanceRootVolumeSize:
+    Type: String
+    Default: '200'
+    Description: Size in GB of the root volume
+
+  #Sentry ECS variables
+  SslLoadBalancer:
+    Type: String
+
+  SentryImage:
+    Type: String
+    Default: rungutancommunity/sentry-base:latest
+
+  SnubaImage:
+    Type: String
+    Default: rungutancommunity/sentry-snuba:latest
+
+  RelayImage:
+    Type: String
+    Default: rungutancommunity/sentry-relay:latest
+
+  BashImage:
+    Type: String
+    Default: bash:latest
+
+  MinCountSnubaApi:
+    Type: String
+    Default: "1"
+
+  MaxCountSnubaApi:
+    Type: String
+    Default: "10"
+
+  MinCountSentryWeb:
+    Type: String
+    Default: "1"
+
+  MaxCountSentryWeb:
+    Type: String
+    Default: "10"
+
+  MinCountSentryRelay:
+    Type: String
+    Default: "1"
+
+  MaxCountSentryRelay:
+    Type: String
+    Default: "10"
+
+  DesiredCountSentryCron:
+    Type: String
+    Default: "1"
+
+  MinCountSentryIngestAttachments:
+    Type: String
+    Default: "1"
+
+  MaxCountSentryIngestAttachments:
+    Type: String
+    Default: "10"
+
+  MinCountSentryIngestEvents:
+    Type: String
+    Default: "1"
+
+  MaxCountSentryIngestEvents:
+    Type: String
+    Default: "10"
+
+  MinCountSentryIngestTransactions:
+    Type: String
+    Default: "1"
+
+  MaxCountSentryIngestTransactions:
+    Type: String
+    Default: "10"
+
+  MinCountSentryPostProcessForward:
+    Type: String
+    Default: "1"
+
+  MaxCountSentryPostProcessForward:
+    Type: String
+    Default: "10"
+
+  MinCountSnubaSessionsConsumer:
+    Type: String
+    Default: "1"
+
+  MaxCountSnubaSessionsConsumer:
+    Type: String
+    Default: "10"
+
+  MinCountSnubaEventsConsumer:
+    Type: String
+    Default: "1"
+
+  MaxCountSnubaEventsConsumer:
+    Type: String
+    Default: "10"
+
+  MinCountSnubaOutcomesConsumer:
+    Type: String
+    Default: "1"
+
+  MaxCountSnubaOutcomesConsumer:
+    Type: String
+    Default: "10"
+
+  MinCountSnubaTransactionsConsumer:
+    Type: String
+    Default: "1"
+
+  MaxCountSnubaTransactionsConsumer:
+    Type: String
+    Default: "10"
+
+  MinCountSnubaEventsReplacer:
+    Type: String
+    Default: "1"
+
+  MaxCountSnubaEventsReplacer:
+    Type: String
+    Default: "10"
+
+  DesiredCountSentryWorkers:
+    Type: String
+    Default: "1"
+
+  SentrySystemSecretKey:
+    Type: String
+    NoEcho: true
+    Default: "f67bd277-4338-43e7-baa1-5cc121c50ff1"
+
+  # DNS record definitions
+  DnsZone:
+    Type: AWS::Route53::HostedZone::Id
+    Description: Route53 hosted zone in which to place dns records
+
+  SentryDnsRecord:
+    Type: String
+    Default: sentry.mydomain.com
+
+  SnubaApiDnsRecord:
+    Type: String
+    Default: snuba-api.mydomain.com
+
+  RelayDnsRecord:
+    Type: String
+    Default: sentry-relay.mydomain.com
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: VPC variables
+        Parameters:
+          - VPCSubnetCidrBlock
+          - PublicSubnetCidrBlock1
+          - PublicSubnetCidrBlock2
+          - PublicSubnetCidrBlock3
+          - PrivateSubnetCidrBlock1
+          - PrivateSubnetCidrBlock2
+          - PrivateSubnetCidrBlock3
+          - AvailabilityZone1
+          - AvailabilityZone2
+          - AvailabilityZone3
+
+      - Label:
+          default: Kafka variables
+        Parameters:
+          - KafkaInstanceType
+          - KafkaVersion
+          - KafkaInstanceRootVolumeSize
+          - PostgresDbName
+          - PostgresDbUsername
+          - PostgresDbPassword
+          - PostgresAllocatedStorage
+          - PostgresMaxAllocatedStorage
+          - PostgresDbInstanceClass
+
+      - Label:
+          default: ElastiCache Redis variables
+        Parameters:
+          - ElastiCacheInstanceClass
+
+      - Label:
+          default: OpsWorks ClickHouse variables
+        Parameters:
+          - ClickHouseCookbookUrl
+          - ClickHouseInstanceType
+          - ClickHouseInstanceRootVolumeSize
+
+      - Label:
+          default: Sentry ECS variables
+        Parameters:
+          - SslLoadBalancer
+          - SentryImage
+          - SnubaImage
+          - RelayImage
+          - BashImage
+          - MinCountSnubaApi
+          - MaxCountSnubaApi 
+          - MinCountSentryWeb
+          - MaxCountSentryWeb
+          - MinCountSentryRelay
+          - MaxCountSentryRelay
+          - DesiredCountSentryCron
+          - MinCountSentryIngestAttachments
+          - MaxCountSentryIngestAttachments
+          - MinCountSentryIngestEvents
+          - MaxCountSentryIngestEvents
+          - MinCountSentryIngestTransactions
+          - MaxCountSentryIngestTransactions
+          - MinCountSentryPostProcessForward
+          - MaxCountSentryPostProcessForward
+          - MinCountSnubaSessionsConsumer
+          - MaxCountSnubaSessionsConsumer
+          - MinCountSnubaEventsConsumer
+          - MaxCountSnubaEventsConsumer
+          - MinCountSnubaOutcomesConsumer
+          - MaxCountSnubaOutcomesConsumer
+          - MinCountSnubaTransactionsConsumer
+          - MaxCountSnubaTransactionsConsumer
+          - MinCountSnubaEventsReplacer
+          - MaxCountSnubaEventsReplacer
+          - DesiredCountSentryWorkers
+          - SentrySystemSecretKey
+
+      - Label:
+          default: DNS record variables
+        Parameters:
+          - DnsZone
+          - SentryDnsRecord
+          - SnubaApiDnsRecord
+          - RelayDnsRecord
+
+Resources:
+
+  VPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      EnableDnsSupport: 'true'
+      EnableDnsHostnames: 'true'
+      CidrBlock:
+        Ref: VPCSubnetCidrBlock
+      Tags:
+      - Key: Name
+        Value:
+          Ref: "AWS::StackName"
+
+  PublicSubnet1:
+    Type: AWS::EC2::Subnet
+    DependsOn: VPC
+    Properties:
+      VpcId:
+        Ref: VPC
+      AvailabilityZone:
+        Fn::Sub: "${AWS::Region}${AvailabilityZone1}"
+      MapPublicIpOnLaunch: true
+      CidrBlock:
+        Ref: PublicSubnetCidrBlock1
+      Tags:
+      - Key: Name
+        Value:
+          Fn::Sub: "${AWS::StackName}-public-az1"
+
+  PublicSubnet2:
+    Type: AWS::EC2::Subnet
+    DependsOn: VPC
+    Properties:
+      VpcId:
+        Ref: VPC
+      AvailabilityZone:
+        Fn::Sub: "${AWS::Region}${AvailabilityZone2}"
+      MapPublicIpOnLaunch: true
+      CidrBlock:
+        Ref: PublicSubnetCidrBlock2
+      Tags:
+      - Key: Name
+        Value:
+          Fn::Sub: "${AWS::StackName}-public-az2"
+
+  PublicSubnet3:
+    Type: AWS::EC2::Subnet
+    DependsOn: VPC
+    Properties:
+      VpcId:
+        Ref: VPC
+      AvailabilityZone:
+        Fn::Sub: "${AWS::Region}${AvailabilityZone3}"
+      MapPublicIpOnLaunch: true
+      CidrBlock:
+        Ref: PublicSubnetCidrBlock3
+      Tags:
+      - Key: Name
+        Value:
+          Fn::Sub: "${AWS::StackName}-public-az3"
+
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+      - Key: Name
+        Value:
+          Fn::Sub: "${AWS::StackName}-InternetGateway"
+
+  GatewayToInternet:
+    Type: AWS::EC2::VPCGatewayAttachment
+    DependsOn:
+    - InternetGateway
+    - VPC
+    Properties:
+      VpcId:
+        Ref: VPC
+      InternetGatewayId:
+        Ref: InternetGateway
+
+  NatGateway:
+    Type: AWS::EC2::NatGateway
+    DependsOn: GatewayToInternet
+    Properties:
+      AllocationId:
+        Fn::GetAtt:
+        - EIP
+        - AllocationId
+      SubnetId:
+        Ref: PublicSubnet1
+      Tags:
+      - Key: Name
+        Value:
+          Fn::Sub: "${AWS::StackName}-NatGateway"
+
+  EIP:
+    Type: AWS::EC2::EIP
+    Properties:
+      Domain: VPC
+
+  PublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    DependsOn: VPC
+    Properties:
+      VpcId:
+        Ref: VPC
+      Tags:
+      - Key: Name
+        Value:
+          Fn::Sub: "${AWS::StackName}-public"
+
+  PublicRoute:
+    Type: AWS::EC2::Route
+    DependsOn:
+    - PublicRouteTable
+    - InternetGateway
+    Properties:
+      RouteTableId:
+        Ref: PublicRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId:
+        Ref: InternetGateway
+
+  PublicSubnetRouteTableAssociation1:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    DependsOn:
+    - PublicSubnet1
+    - PublicRouteTable
+    Properties:
+      SubnetId:
+        Ref: PublicSubnet1
+      RouteTableId:
+        Ref: PublicRouteTable
+
+  PublicSubnetRouteTableAssociation2:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    DependsOn:
+    - PublicSubnet2
+    - PublicRouteTable
+    - GatewayToInternet
+    Properties:
+      SubnetId:
+        Ref: PublicSubnet2
+      RouteTableId:
+        Ref: PublicRouteTable
+
+  PublicSubnetRouteTableAssociation3:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    DependsOn:
+    - PublicSubnet3
+    - PublicRouteTable
+    - GatewayToInternet
+    Properties:
+      SubnetId:
+        Ref: PublicSubnet3
+      RouteTableId:
+        Ref: PublicRouteTable
+
+  PrivateSubnet1:
+    Type: AWS::EC2::Subnet
+    DependsOn: VPC
+    Properties:
+      VpcId:
+        Ref: VPC
+      AvailabilityZone:
+        Fn::Sub: "${AWS::Region}${AvailabilityZone1}"
+      CidrBlock:
+        Ref: PrivateSubnetCidrBlock1
+      Tags:
+      - Key: Name
+        Value:
+          Fn::Sub: "${AWS::StackName}-private-az1"
+
+  PrivateSubnet2:
+    Type: AWS::EC2::Subnet
+    DependsOn: VPC
+    Properties:
+      VpcId:
+        Ref: VPC
+      AvailabilityZone:
+        Fn::Sub: "${AWS::Region}${AvailabilityZone2}"
+      CidrBlock:
+        Ref: PrivateSubnetCidrBlock2
+      Tags:
+      - Key: Name
+        Value:
+          Fn::Sub: "${AWS::StackName}-private-az2"
+
+  PrivateSubnet3:
+    Type: AWS::EC2::Subnet
+    DependsOn: VPC
+    Properties:
+      VpcId:
+        Ref: VPC
+      AvailabilityZone:
+        Fn::Sub: "${AWS::Region}${AvailabilityZone3}"
+      CidrBlock:
+        Ref: PrivateSubnetCidrBlock3
+      Tags:
+      - Key: Name
+        Value:
+          Fn::Sub: "${AWS::StackName}-private-az3"
+
+  PrivateRouteTable:
+    Type: AWS::EC2::RouteTable
+    DependsOn: VPC
+    Properties:
+      VpcId:
+        Ref: VPC
+      Tags:
+      - Key: Name
+        Value:
+          Fn::Sub: "${AWS::StackName}-private"
+
+  PrivateRoute:
+    DependsOn:
+    - PrivateRouteTable
+    - NatGateway
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId:
+        Ref: PrivateRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId:
+        Ref: NatGateway
+
+  PrivateSubnetRouteTableAssociation1:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    DependsOn:
+    - PrivateSubnet1
+    - PrivateRouteTable
+    Properties:
+      SubnetId:
+        Ref: PrivateSubnet1
+      RouteTableId:
+        Ref: PrivateRouteTable
+
+  PrivateSubnetRouteTableAssociation2:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    DependsOn:
+    - PrivateSubnet2
+    - PrivateRouteTable
+    Properties:
+      SubnetId:
+        Ref: PrivateSubnet2
+      RouteTableId:
+        Ref: PrivateRouteTable
+
+  PrivateSubnetRouteTableAssociation3:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    DependsOn:
+    - PrivateSubnet3
+    - PrivateRouteTable
+    Properties:
+      SubnetId:
+        Ref: PrivateSubnet3
+      RouteTableId:
+        Ref: PrivateRouteTable
+
+  S3VpcEndpoint:
+    Type: AWS::EC2::VPCEndpoint
+    DependsOn:
+    - VPC
+    - PrivateRouteTable
+    - PublicRouteTable
+    Properties:
+      PolicyDocument:
+        Statement:
+        - Action: "*"
+          Effect: Allow
+          Resource: "*"
+          Principal: "*"
+      RouteTableIds:
+      - Ref: PrivateRouteTable
+      - Ref: PublicRouteTable
+      ServiceName:
+        Fn::Sub: "com.amazonaws.${AWS::Region}.s3"
+      VpcId:
+        Ref: VPC
+
+  # Public Network ACL
+  PublicNetworkAcl:
+    Type: AWS::EC2::NetworkAcl
+    DependsOn: VPC
+    Properties:
+      VpcId:
+        Ref: VPC
+      Tags:
+      - Key: Name
+        Value:
+          Fn::Sub: "${AWS::StackName}-public-acl"
+      
+  # Public Network ACL Rules
+  InboundPublicNetworkAclAllowAll:
+    Type: AWS::EC2::NetworkAclEntry
+    DependsOn: PublicNetworkAcl
+    Properties:
+      NetworkAclId:
+        Ref: PublicNetworkAcl
+      RuleNumber: "100"
+      Protocol: '-1'
+      RuleAction: allow
+      Egress: 'false'
+      CidrBlock: 0.0.0.0/0
+      PortRange:
+        From: '0'
+        To: '65535'
+
+  OutboundPublicNetworkAclAllowAll:
+    Type: AWS::EC2::NetworkAclEntry
+    DependsOn: PublicNetworkAcl
+    Properties:
+      NetworkAclId:
+        Ref: PublicNetworkAcl
+      RuleNumber: "100"
+      Protocol: "-1"
+      RuleAction: allow
+      Egress: 'true'
+      CidrBlock: 0.0.0.0/0
+      PortRange:
+        From: '0'
+        To: '65535'
+
+  # Public Subnet Association
+  PublicSubnetNetworkAclAssociation1:
+    Type: AWS::EC2::SubnetNetworkAclAssociation
+    DependsOn:
+    - PublicSubnet1
+    - PublicNetworkAcl
+    Properties:
+      SubnetId:
+        Ref: PublicSubnet1
+      NetworkAclId:
+        Ref: PublicNetworkAcl
+
+  PublicSubnetNetworkAclAssociation2:
+    Type: AWS::EC2::SubnetNetworkAclAssociation
+    DependsOn:
+    - PublicSubnet2
+    - PublicNetworkAcl
+    Properties:
+      SubnetId:
+        Ref: PublicSubnet2
+      NetworkAclId:
+        Ref: PublicNetworkAcl
+
+  PublicSubnetNetworkAclAssociation3:
+    Type: AWS::EC2::SubnetNetworkAclAssociation
+    DependsOn:
+    - PublicSubnet3
+    - PublicNetworkAcl
+    Properties:
+      SubnetId:
+        Ref: PublicSubnet3
+      NetworkAclId:
+        Ref: PublicNetworkAcl
+
+  # Private Network ACL
+  PrivateNetworkAcl:
+    Type: AWS::EC2::NetworkAcl
+    DependsOn: VPC
+    Properties:
+      VpcId:
+        Ref: VPC
+      Tags:
+      - Key: Name
+        Value:
+          Fn::Sub: "${AWS::StackName}-private-acl"
+      
+  # Private Network ACL Rules
+  InboundEphemeralPrivateNetworkAclAllowAll:
+    Type: AWS::EC2::NetworkAclEntry
+    DependsOn: PrivateNetworkAcl
+    Properties:
+      NetworkAclId:
+        Ref: PrivateNetworkAcl
+      RuleNumber: "100"
+      Protocol: "-1"
+      RuleAction: allow
+      Egress: 'false'
+      CidrBlock: 0.0.0.0/0
+      PortRange:
+        From: '0'
+        To: '65535'
+
+  OutboundPrivateNetworkAclAllowAll:
+    Type: AWS::EC2::NetworkAclEntry
+    DependsOn: PrivateNetworkAcl
+    Properties:
+      NetworkAclId:
+        Ref: PrivateNetworkAcl
+      RuleNumber: "100"
+      Protocol: "-1"
+      RuleAction: allow
+      Egress: 'true'
+      CidrBlock: 0.0.0.0/0
+      PortRange:
+        From: '0'
+        To: '65535'
+
+  # Private Subnet Associations
+  PrivateSubnetNetworkAclAssociation1:
+    Type: AWS::EC2::SubnetNetworkAclAssociation
+    DependsOn:
+    - PrivateSubnet1
+    - PrivateNetworkAcl
+    Properties:
+      SubnetId:
+        Ref: PrivateSubnet1
+      NetworkAclId:
+        Ref: PrivateNetworkAcl
+
+  PrivateSubnetNetworkAclAssociation2:
+    Type: AWS::EC2::SubnetNetworkAclAssociation
+    DependsOn:
+    - PrivateSubnet2
+    - PrivateNetworkAcl
+    Properties:
+      SubnetId:
+        Ref: PrivateSubnet2
+      NetworkAclId:
+        Ref: PrivateNetworkAcl
+
+  PrivateSubnetNetworkAclAssociation3:
+    Type: AWS::EC2::SubnetNetworkAclAssociation
+    DependsOn:
+    - PrivateSubnet3
+    - PrivateNetworkAcl
+    Properties:
+      SubnetId:
+        Ref: PrivateSubnet3
+      NetworkAclId:
+        Ref: PrivateNetworkAcl
+
+  # Security Groups
+  InternalAccessSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    DependsOn: VPC
+    Properties:
+      GroupDescription: Instance to Instance Access in VPC
+      VpcId:
+        Ref: VPC
+      Tags:
+      - Key: Name
+        Value:
+          Fn::Sub: "${AWS::StackName}-instance-to-instance"
+
+  InternalAccessSecurityGroupIngress:
+    Type: AWS::EC2::SecurityGroupIngress
+    DependsOn: InternalAccessSecurityGroup
+    Properties:
+      GroupId:
+        Ref: InternalAccessSecurityGroup
+      IpProtocol: "-1"
+      SourceSecurityGroupId:
+        Ref: InternalAccessSecurityGroup
+
+  RemoteAccessSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Instance Access over VPN/Direct Connect
+      VpcId:
+        Ref: VPC
+      Tags:
+      - Key: Name
+        Value:
+          Fn::Sub: "${AWS::StackName}-remote-to-instance"
+      SecurityGroupIngress:
+      - IpProtocol: "-1"
+        CidrIp: 
+          Ref: VPCSubnetCidrBlock
+      SecurityGroupEgress:
+      - IpProtocol: "-1"
+        CidrIp: 0.0.0.0/0
+
+  Ec2SecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription:
+        Fn::Sub: ${AWS::StackName}-Sg
+      VpcId:
+        Ref: VPC
+  
+  Ec2SecurityGroupIngressItself:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties: 
+      Description:
+        Fn::Sub: ${AWS::StackName}-Ec2SecurityGroupIngressItself
+      IpProtocol: "-1"
+      GroupId:
+        Fn::GetAtt: Ec2SecurityGroup.GroupId
+      SourceSecurityGroupId:
+        Fn::GetAtt: Ec2SecurityGroup.GroupId
+
+  Ec2SecurityGroupIngressLb:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties: 
+      Description:
+        Fn::Sub: ${AWS::StackName}-Ec2SecurityGroupIngressLb
+      IpProtocol: "-1"
+      GroupId:
+        Fn::GetAtt: Ec2SecurityGroup.GroupId
+      SourceSecurityGroupId:
+        Fn::GetAtt: LbSecurityGroup.GroupId
+
+  Ec2SecurityGroupIngressClickHouse:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties: 
+      Description:
+        Fn::Sub: ${AWS::StackName}-Ec2SecurityGroupIngressClickHouse
+      IpProtocol: "-1"
+      GroupId:
+        Fn::GetAtt: Ec2SecurityGroup.GroupId
+      SourceSecurityGroupId:
+        Fn::GetAtt: ClickHouseLbSecurityGroup.GroupId
+
+  LbSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription:
+        Fn::Sub: ${AWS::StackName}-Sg
+      VpcId:
+        Ref: VPC
+      SecurityGroupIngress:
+      - IpProtocol: tcp
+        FromPort: 80
+        ToPort: 80
+        CidrIp: 0.0.0.0/0
+      - IpProtocol: tcp
+        FromPort: 443
+        ToPort: 443
+        CidrIp: 0.0.0.0/0
+  
+  LbSecurityGroupIngress:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties: 
+      Description:
+        Fn::Sub: ${AWS::StackName}-LbSecurityGroup
+      IpProtocol: "-1"
+      GroupId:
+        Fn::GetAtt: LbSecurityGroup.GroupId
+      SourceSecurityGroupId:
+        Fn::GetAtt: LbSecurityGroup.GroupId
+
+  ClickHouseLbSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription:
+        Fn::Sub: ${AWS::StackName}-ClickHouseLbSecurityGroup
+      VpcId:
+        Ref: VPC
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: '8123'
+          ToPort: '8123'
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: '9000'
+          ToPort: '9000'
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: '9004'
+          ToPort: '9004'
+          CidrIp: 0.0.0.0/0
+
+  # Kafka stack
+  KafkaKmsKey:
+    Type: AWS::KMS::Key
+    Properties:
+      KeyPolicy:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Action: kms:*
+            Resource: "*"
+            Principal:
+              AWS:
+                - Fn::Sub: arn:aws:iam::${AWS::AccountId}:root
+
+  KafkaConfigurationLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal: {Service: [lambda.amazonaws.com]}
+          Action: ['sts:AssumeRole']
+      Policies:
+      - PolicyName:
+          Fn::Sub: ${AWS::StackName}-Kafka
+        PolicyDocument:
+          Statement:
+          - Effect: Allow
+            Action:
+            - kafka:*
+            Resource: '*'
+      - PolicyName:
+          Fn::Sub: ${AWS::StackName}-CloudWatch
+        PolicyDocument:
+          Statement:
+          - Effect: Allow
+            Action:
+            - logs:*
+            - cloudwatch:*
+            Resource: '*'
+
+  KafkaConfigurationLambdaFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      Handler: index.lambda_handler
+      Runtime: python3.8
+      Role:
+        Fn::GetAtt: KafkaConfigurationLambdaRole.Arn
+      Code:
+        ZipFile:
+          Fn::Sub: |
+            import boto3
+            from botocore.exceptions import ClientError
+            import json
+            import cfnresponse
+            from datetime import datetime
+
+            def lambda_handler(event, context):
+              data = {}
+
+              server_properties = f"""auto.create.topics.enable = {event['ResourceProperties']['auto_create_topics_enable']}
+            delete.topic.enable = {event['ResourceProperties']['delete_topic_enable']}
+            default.replication.factor = {event['ResourceProperties']['default_replication_factor']}
+            min.insync.replicas = {event['ResourceProperties']['min_insync_replicas']}
+            num.network.threads =  {event['ResourceProperties']['num_network_threads']}
+            num.partitions = {event['ResourceProperties']['num_partitions']}
+            """
+
+              try:
+                kafka_client = boto3.client('kafka',region_name="${AWS::Region}")
+
+                if event['RequestType'] == 'Create':
+                  
+                  response = kafka_client.create_configuration(
+                    KafkaVersions=["${KafkaVersion}"],
+                    Name="${AWS::StackName}",
+                    ServerProperties=server_properties.encode()
+                  )
+                  data["Arn"] = response["Arn"]
+                  data["LatestRevision"] = response["LatestRevision"]["Revision"]
+
+                elif event['RequestType'] == 'Delete':
+                  response_list = kafka_client.list_configurations(MaxResults=100)
+                  if "Configurations" in response_list:
+                    for config in response_list["Configurations"]:
+                      if config["Name"] == "${AWS::StackName}":
+                        response = kafka_client.delete_configuration(Arn=config["Arn"])
+                  data["Reason"] = "OK"
+
+                else:
+                  response_list = kafka_client.list_configurations(MaxResults=100)
+                  if "Configurations" in response_list:
+                    for config in response_list["Configurations"]:
+                      if config["Name"] == "${AWS::StackName}":
+                        response = kafka_client.update_configuration(Arn=config["Arn"], ServerProperties=server_properties.encode())
+                  data["Arn"] = response["Arn"]
+                  data["LatestRevision"] = response["LatestRevision"]["Revision"]
+                  
+                cfnresponse.send(event, context, cfnresponse.SUCCESS, data)
+              except Exception as e:
+                print(str(e))
+                data["Reason"] = str(e)
+                cfnresponse.send(event, context, cfnresponse.FAILED, data)
+
+  KafkaConfigurationLambdaResult:
+    Type: Custom::KafkaCreateConfiguration
+    Properties:
+      ServiceToken:
+        Fn::GetAtt: KafkaConfigurationLambdaFunction.Arn
+      auto_create_topics_enable: "true"
+      delete_topic_enable: "true"
+      default_replication_factor: "1"
+      min_insync_replicas: "1"
+      num_network_threads: "3"
+      num_partitions: "1"
+
+  KafkaCluster:
+    Type: AWS::MSK::Cluster
+    Properties: 
+      BrokerNodeGroupInfo: 
+        ClientSubnets:
+          - Ref: PrivateSubnet1
+          - Ref: PrivateSubnet2
+          - Ref: PrivateSubnet3
+        InstanceType:
+          Ref: KafkaInstanceType
+        SecurityGroups: 
+          - Ref: Ec2SecurityGroup
+        StorageInfo:
+          EBSStorageInfo:
+            VolumeSize:
+              Ref: KafkaInstanceRootVolumeSize
+      ClusterName:
+        Ref: AWS::StackName
+      ConfigurationInfo: 
+        Arn:
+          Fn::GetAtt: KafkaConfigurationLambdaResult.Arn
+        Revision:
+          Fn::GetAtt: KafkaConfigurationLambdaResult.LatestRevision
+      EncryptionInfo: 
+        EncryptionAtRest: 
+          DataVolumeKMSKeyId:
+            Fn::GetAtt: KafkaKmsKey.Arn
+        EncryptionInTransit: 
+          ClientBroker: "TLS_PLAINTEXT"
+          InCluster: True
+      KafkaVersion:
+        Ref: KafkaVersion
+      NumberOfBrokerNodes: 3
+      OpenMonitoring: 
+        Prometheus:
+          JmxExporter:
+            EnabledInBroker: True
+          NodeExporter:
+            EnabledInBroker: True
+
+  RDSSubnetGroup:
+    Type: AWS::RDS::DBSubnetGroup
+    Properties: 
+      DBSubnetGroupDescription:
+        Fn::Sub: ${AWS::StackName}-DBSubnetGroup
+      SubnetIds:
+        - Ref: PrivateSubnet1
+        - Ref: PrivateSubnet2
+        - Ref: PrivateSubnet3
+
+  RdsKmsKey:
+    Type: AWS::KMS::Key
+    Properties:
+      KeyPolicy:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Action: kms:*
+            Resource: "*"
+            Principal:
+              AWS:
+                - Fn::Sub: arn:aws:iam::${AWS::AccountId}:root
+
+  EnhancedMonitoringRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - monitoring.rds.amazonaws.com
+          Action:
+          - sts:AssumeRole
+      ManagedPolicyArns:
+      - arn:aws:iam::aws:policy/service-role/AmazonRDSEnhancedMonitoringRole
+
+  RDSInstance:
+    Type: AWS::RDS::DBInstance
+    Properties:
+      DBName:
+        Ref: PostgresDbName
+      AllocatedStorage:
+        Ref: PostgresAllocatedStorage
+      MaxAllocatedStorage:
+        Ref: PostgresMaxAllocatedStorage
+      DBInstanceClass:
+        Ref: PostgresDbInstanceClass
+      Engine: postgres
+      EngineVersion: '12.4'
+      MasterUsername:
+        Ref: PostgresDbUsername
+      MasterUserPassword:
+        Ref: PostgresDbPassword
+      DBSubnetGroupName:
+        Ref: RDSSubnetGroup
+      VPCSecurityGroups:
+        - Fn::GetAtt: Ec2SecurityGroup.GroupId
+      MultiAZ: false
+      PubliclyAccessible: false
+      StorageType: gp2
+      AutoMinorVersionUpgrade: true
+      AllowMajorVersionUpgrade: true
+      BackupRetentionPeriod: 1
+      CopyTagsToSnapshot: true
+      EnablePerformanceInsights: true
+      StorageEncrypted: true
+      KmsKeyId:
+        Fn::GetAtt: RdsKmsKey.Arn
+      EnableCloudwatchLogsExports:
+        - "postgresql"
+        - "upgrade"
+      MonitoringInterval: 60
+      MonitoringRoleArn:
+        Fn::GetAtt: EnhancedMonitoringRole.Arn
+      PerformanceInsightsRetentionPeriod: 7
+      Port: "5432"
+
+  ElastiCacheSubnetGroup:
+    Type: AWS::ElastiCache::SubnetGroup
+    Properties: 
+      Description:
+        Fn::Sub: ${AWS::StackName}-ElastiCacheSubnetGroup
+      SubnetIds:
+        - Ref: PrivateSubnet1
+        - Ref: PrivateSubnet2
+        - Ref: PrivateSubnet3
+  
+  ElastiCacheNode:
+    Type: AWS::ElastiCache::CacheCluster
+    Properties: 
+      CacheNodeType:
+        Ref: ElastiCacheInstanceClass
+      CacheParameterGroupName: "default.redis5.0"
+      CacheSubnetGroupName:
+        Ref: ElastiCacheSubnetGroup
+      Engine: redis
+      EngineVersion: "5.0.6"
+      NumCacheNodes: "1"
+      Port: "6379"
+      VpcSecurityGroupIds: 
+        - Fn::GetAtt: Ec2SecurityGroup.GroupId
+
+  ServiceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - 'opsworks.amazonaws.com'
+            Action:
+              - 'sts:AssumeRole'
+      Path: /
+      Policies:
+        - PolicyName:
+            Fn::Sub: ${AWS::StackName}-OpsWorksDefaultPolicy
+          PolicyDocument:
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'ec2:*'
+                  - 'iam:PassRole'
+                  - 'cloudwatch:GetMetricStatistics'
+                  - 'cloudwatch:DescribeAlarms'
+                  - 'elasticloadbalancing:*'
+                  - 'ecs:*'
+                  - 'rds:*'
+                Resource: '*'
+
+  InstanceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: 
+                - 'ec2.amazonaws.com'
+            Action:
+              - 'sts:AssumeRole'
+      Path: /
+      Policies:
+        - PolicyName:
+            Fn::Sub: ${AWS::StackName}-CloudWatchLogs
+          PolicyDocument:
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'cloudwatch:*'
+                  - 'logs:*'
+                Resource:
+                  - '*'
+
+  InstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Path: /
+      Roles:
+        - Ref: InstanceRole
+
+  OpsWorksStack: 
+    Type: AWS::OpsWorks::Stack
+    Properties: 
+      AgentVersion: LATEST
+      Name: 
+        Fn::Sub: ${AWS::StackName}-ClickHouse
+      ServiceRoleArn: 
+        Fn::GetAtt:
+          - ServiceRole
+          - Arn
+      DefaultInstanceProfileArn: 
+        Fn::GetAtt:
+          - InstanceProfile
+          - Arn
+      ConfigurationManager:
+        Name: Chef
+        Version: '12'
+      UseCustomCookbooks: true
+      CustomCookbooksSource:
+        Type: archive
+        Url:
+          Ref: ClickHouseCookbookUrl
+      DefaultSubnetId:
+        Ref: PrivateSubnet1
+      VpcId:
+        Ref: VPC
+      UseOpsworksSecurityGroups: true
+      DefaultOs: Ubuntu 18.04 LTS
+      DefaultRootDeviceType: ebs
+
+  Layer:
+    Type: AWS::OpsWorks::Layer
+    Properties:
+      Name: Sentry-ClickHouse
+      Shortname: sentry-clickhouse-
+      Type: custom
+      EnableAutoHealing: 'false'
+      AutoAssignElasticIps: 'false'
+      AutoAssignPublicIps: 'false'
+      StackId:
+        Ref: OpsWorksStack
+      CustomRecipes:
+        Setup:
+          - 'clickhouse_stack::setup'
+      UseEbsOptimizedInstances: True
+      CustomSecurityGroupIds:
+        - Fn::GetAtt: Ec2SecurityGroup.GroupId
+
+  ElbClickHouse:
+    Type: AWS::ElasticLoadBalancing::LoadBalancer
+    DependsOn: Layer
+    Properties:
+      HealthCheck:
+        Interval: 30
+        Target: TCP:22
+        Timeout: 5
+        UnhealthyThreshold: 5
+        HealthyThreshold: 5
+      Listeners:
+        - InstancePort: '8123'
+          LoadBalancerPort: '8123'
+          Protocol: TCP
+          InstanceProtocol: TCP
+        - InstancePort: '9000'
+          LoadBalancerPort: '9000'
+          Protocol: TCP
+          InstanceProtocol: TCP
+        - InstancePort: '9004'
+          LoadBalancerPort: '9004'
+          Protocol: TCP
+          InstanceProtocol: TCP
+      Scheme: internal
+      SecurityGroups:
+        - Ref: ClickHouseLbSecurityGroup
+      Subnets:
+        - Ref: PrivateSubnet1
+        - Ref: PrivateSubnet2
+        - Ref: PrivateSubnet3
+      ConnectionDrainingPolicy:
+        Enabled: 'true'
+        Timeout: '300'
+      LBCookieStickinessPolicy:
+        - CookieExpirationPeriod: 600
+          PolicyName:
+            Ref: AWS::StackName
+
+  ElbClickHouseLayer:
+    DependsOn: ElbClickHouse
+    Type: AWS::OpsWorks::ElasticLoadBalancerAttachment
+    Properties: 
+      ElasticLoadBalancerName: 
+        Ref: ElbClickHouse
+      LayerId: 
+        Ref: Layer
+
+  InstanceOpsWorks:
+    Type: AWS::OpsWorks::Instance
+    Properties:
+      StackId:
+        Ref: OpsWorksStack
+      LayerIds:
+        - Ref: Layer
+      InstanceType:
+        Ref: ClickHouseInstanceType
+      RootDeviceType: ebs
+      SubnetId:
+        Ref: PrivateSubnet1
+      Hostname: sentry-clickhouse-1
+      BlockDeviceMappings:
+        - DeviceName: ROOT_DEVICE
+          Ebs:
+            VolumeType: gp2
+            VolumeSize:
+              Ref: ClickHouseInstanceRootVolumeSize
+
+  KafkaGetBrokersLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal: {Service: [lambda.amazonaws.com]}
+          Action: ['sts:AssumeRole']
+      Policies:
+      - PolicyName:
+          Fn::Sub: ${AWS::StackName}-Kafka
+        PolicyDocument:
+          Statement:
+          - Effect: Allow
+            Action:
+            - kafka:*
+            Resource: '*'
+      - PolicyName:
+          Fn::Sub: ${AWS::StackName}-CloudWatch
+        PolicyDocument:
+          Statement:
+          - Effect: Allow
+            Action:
+            - logs:*
+            - cloudwatch:*
+            Resource: '*'
+
+  KafkaGetBrokersLambdaFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      Handler: index.lambda_handler
+      Runtime: python3.8
+      Role:
+        Fn::GetAtt: KafkaGetBrokersLambdaRole.Arn
+      Code:
+        ZipFile:
+          Fn::Sub: |
+            import boto3
+            from botocore.exceptions import ClientError
+            import json
+            import cfnresponse
+            from datetime import datetime
+
+            def lambda_handler(event, context):
+              data = {}
+
+              try:
+                kafka_client = boto3.client('kafka',region_name="${AWS::Region}")
+
+                if event['RequestType'] == 'Create':
+                  
+                  response = kafka_client.get_bootstrap_brokers(
+                    ClusterArn=event["ResourceProperties"]["ClusterArn"]
+                  )
+                  data["BootstrapBrokerString"] = response["BootstrapBrokerString"]
+                  data["BootstrapBrokerStringTls"] = response["BootstrapBrokerStringTls"]
+                  data["KafkaBroker1"] = str(response["BootstrapBrokerString"]).split(",")[0]
+                  data["KafkaBroker2"] = str(response["BootstrapBrokerString"]).split(",")[1]
+                  data["KafkaBroker3"] = str(response["BootstrapBrokerString"]).split(",")[2]
+
+                else:
+                  data["Reason"] = "OK"
+                  
+                cfnresponse.send(event, context, cfnresponse.SUCCESS, data)
+              except Exception as e:
+                print(str(e))
+                data["Reason"] = str(e)
+                cfnresponse.send(event, context, cfnresponse.FAILED, data)
+
+  KafkaGetBrokersLambdaResult:
+    Type: Custom::KafkaGetBrokers
+    Properties:
+      ServiceToken:
+        Fn::GetAtt: KafkaGetBrokersLambdaFunction.Arn
+      ClusterArn:
+        Ref: KafkaCluster
+
+  SecretPostgresPassword:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name:
+        Fn::Sub: ${AWS::StackName}-SecretPostgresPassword
+      SecretString:
+        Ref: PostgresDbPassword
+
+  SentryBucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+    Properties:
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: True
+        BlockPublicPolicy: True
+        IgnorePublicAcls: True
+        RestrictPublicBuckets: True
+
+  ClusterWeb:
+    Type: AWS::ECS::Cluster
+
+  ClusterWorkers:
+    Type: AWS::ECS::Cluster
+    Properties:
+      CapacityProviders: 
+        - FARGATE_SPOT
+      DefaultCapacityProviderStrategy: 
+        - CapacityProvider: FARGATE_SPOT
+          Weight: 1
+
+  LoadBalancer:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      LoadBalancerAttributes:
+        - Key: idle_timeout.timeout_seconds
+          Value: 30
+      Scheme: "internal"
+      SecurityGroups:
+        - Ref: LbSecurityGroup
+      Subnets:
+        - Ref: PrivateSubnet1
+        - Ref: PrivateSubnet2
+        - Ref: PrivateSubnet3
+
+  LoadBalancerProxy:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      LoadBalancerAttributes:
+        - Key: idle_timeout.timeout_seconds
+          Value: 30
+      Scheme: "internet-facing"
+      SecurityGroups:
+        - Ref: LbSecurityGroup
+      Subnets:
+        - Ref: PublicSubnet1
+        - Ref: PublicSubnet2
+        - Ref: PublicSubnet3
+
+  Route53RecordSentry:
+    Type: AWS::Route53::RecordSetGroup
+    Properties:
+      HostedZoneId:
+        Ref: DnsZone
+      Comment: 
+        Fn::Sub: Route53-record-for-Sentry
+      RecordSets:
+      - Name:
+          Ref: SentryDnsRecord
+        Type: A
+        AliasTarget:
+          HostedZoneId: 
+            Fn::GetAtt:
+              - LoadBalancerProxy
+              - CanonicalHostedZoneID
+          DNSName: 
+            Fn::GetAtt:
+              - LoadBalancerProxy
+              - DNSName
+
+  Route53RecordSnubaApi:
+    Type: AWS::Route53::RecordSetGroup
+    Properties:
+      HostedZoneId:
+        Ref: DnsZone
+      Comment: 
+        Fn::Sub: Route53-record-for-Sentry-SnubaApi
+      RecordSets:
+      - Name:
+          Ref: SnubaApiDnsRecord
+        Type: A
+        AliasTarget:
+          HostedZoneId: 
+            Fn::GetAtt:
+              - LoadBalancer
+              - CanonicalHostedZoneID
+          DNSName: 
+            Fn::GetAtt:
+              - LoadBalancer
+              - DNSName
+
+  Route53RecordRelay:
+    Type: AWS::Route53::RecordSetGroup
+    Properties:
+      HostedZoneId:
+        Ref: DnsZone
+      Comment: 
+        Fn::Sub: Route53-record-for-Sentry-Relay
+      RecordSets:
+      - Name:
+          Ref: RelayDnsRecord
+        Type: A
+        AliasTarget:
+          HostedZoneId: 
+            Fn::GetAtt:
+              - LoadBalancer
+              - CanonicalHostedZoneID
+          DNSName: 
+            Fn::GetAtt:
+              - LoadBalancer
+              - DNSName
+
+  TargetGroupDefault:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      Port: 80
+      Protocol: HTTP
+      VpcId:
+        Ref: VPC
+
+  ListenerHTTPDefault:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      DefaultActions:
+        - TargetGroupArn:
+            Ref: TargetGroupDefault
+          Type: forward
+      LoadBalancerArn:
+        Ref: LoadBalancer
+      Port: 80
+      Protocol: HTTP
+
+  ListenerHTTPSDefault:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      DefaultActions:
+        - TargetGroupArn:
+            Ref: TargetGroupDefault
+          Type: forward
+      LoadBalancerArn:
+        Ref: LoadBalancer
+      Port: 443
+      Protocol: HTTPS
+      Certificates:
+        - CertificateArn:
+            Ref: SslLoadBalancer
+
+  TargetGroupProxy:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      Port: 80
+      Protocol: HTTP
+      VpcId:
+        Ref: VPC
+
+  ListenerHTTPProxy:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      DefaultActions:
+        - TargetGroupArn:
+            Ref: TargetGroupProxy
+          Type: forward
+      LoadBalancerArn:
+        Ref: LoadBalancerProxy
+      Port: 80
+      Protocol: HTTP
+
+  ListenerHTTPSProxy:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      DefaultActions:
+        - TargetGroupArn:
+            Ref: TargetGroupProxy
+          Type: forward
+      LoadBalancerArn:
+        Ref: LoadBalancerProxy
+      Port: 443
+      Protocol: HTTPS
+      Certificates:
+        - CertificateArn:
+            Ref: SslLoadBalancer
+
+  HttpRedirectHttpsSentryProxy:
+    Type: AWS::ElasticLoadBalancingV2::ListenerRule
+    Properties:
+      Actions:
+      - Type: redirect
+        RedirectConfig:
+          Protocol: HTTPS
+          Port: '443'
+          StatusCode: HTTP_301
+      Conditions:
+      - Field: host-header
+        Values:
+        - Ref: SentryDnsRecord
+      ListenerArn:
+        Ref: ListenerHTTPProxy
+      Priority: 1
+
+  LogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      RetentionInDays: 14
+
+  ScalingRole: 
+    Type: AWS::IAM::Role
+    Properties: 
+      RoleName:
+        Fn::Sub: ${AWS::StackName}-ScalingRole
+      AssumeRolePolicyDocument: 
+        Statement: 
+        - Effect: Allow
+          Principal:
+            Service: application-autoscaling.amazonaws.com
+          Action: 'sts:AssumeRole'
+      Policies:
+      - PolicyName: ScalingPolicy
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action:
+                - application-autoscaling:*
+                - ecs:RunTask
+                - ecs:UpdateSerice
+                - ecs:DescribeServices
+                - cloudwatch:PutMetricAlarm
+                - cloudwatch:DescribeAlarms
+                - cloudwatch:GetMetricStatistics
+                - cloudwatch:SetAlarmState
+                - cloudwatch:DeleteAlarms
+              Resource: "*"
+
+  ExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName:
+        Fn::Sub: ${AWS::StackName}-ExecutionRole
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ecs-tasks.amazonaws.com
+            Action: 'sts:AssumeRole'
+      ManagedPolicyArns:
+        - 'arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy'
+      Policies:
+      - PolicyName: SecretsManagerAccess
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action:
+                - secretsmanager:GetSecretValue
+              Resource:
+                - Ref: SecretPostgresPassword
+
+  TaskRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName:
+        Fn::Sub: ${AWS::StackName}-TaskRole
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ecs-tasks.amazonaws.com
+            Action: 'sts:AssumeRole'
+      ManagedPolicyArns:
+        - 'arn:aws:iam::aws:policy/AmazonSSMReadOnlyAccess'
+      Policies:
+      - PolicyName: S3Access
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action:
+                - s3:*
+              Resource:
+                - Fn::Sub: arn:aws:s3:::${SentryBucket}/*
+                - Fn::Sub: arn:aws:s3:::${SentryBucket}
+            - Effect: Allow
+              Action:
+                - s3:GetAccessPoint
+                - s3:PutAccountPublicAccessBlock
+                - s3:GetAccountPublicAccessBlock
+                - s3:ListAllMyBuckets
+                - s3:ListAccessPoints
+                - s3:ListJobs
+                - s3:CreateJob
+                - s3:HeadBucket
+              Resource: "*"
+
+  TaskDefinitionSnubaApi:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      NetworkMode: awsvpc
+      RequiresCompatibilities:
+        - FARGATE
+      Cpu: "256"
+      Memory: 0.5GB
+      ExecutionRoleArn:
+        Fn::GetAtt: ExecutionRole.Arn
+      TaskRoleArn:
+        Fn::GetAtt: TaskRole.Arn
+      ContainerDefinitions:
+        - Name: sentry-snuba-api
+          Image:
+            Ref: SnubaImage
+          PortMappings:
+          - ContainerPort: 1218
+            Protocol: tcp
+          Secrets:
+            - Name: POSTGRES_PASSWORD
+              ValueFrom:
+                Ref: SecretPostgresPassword
+          Environment:
+            - Name: AWS_DEFAULT_REGION
+              Value:
+                Ref: AWS::Region
+            - Name: REDIS_HOST
+              Value:
+                Fn::GetAtt: ElastiCacheNode.RedisEndpoint.Address
+            - Name: REDIS_PORT
+              Value: "6379"
+            - Name: CLICKHOUSE_HOST
+              Value:
+                Fn::GetAtt: ElbClickHouse.DNSName
+            - Name: CLICKHOUSE_PORT
+              Value: "9000"
+            - Name: CLICKHOUSE_HTTP_PORT
+              Value: "8123"
+            - Name: CLICKHOUSE_SINGLE_NODE
+              Value: "true"
+            - Name: CLICKHOUSE_DATABASE
+              Value: "default"
+            - Name: KAFKA_BROKER_1
+              Value:
+                Fn::GetAtt: KafkaGetBrokersLambdaResult.KafkaBroker1
+            - Name: KAFKA_BROKER_2
+              Value:
+                Fn::GetAtt: KafkaGetBrokersLambdaResult.KafkaBroker2
+            - Name: KAFKA_BROKER_3
+              Value:
+                Fn::GetAtt: KafkaGetBrokersLambdaResult.KafkaBroker3
+            - Name: DEFAULT_BROKERS
+              Value:
+                Fn::GetAtt: KafkaGetBrokersLambdaResult.BootstrapBrokerString
+            - Name: POSTGRES_HOST
+              Value:
+                Fn::GetAtt: RDSInstance.Endpoint.Address
+            - Name: POSTGRES_PORT
+              Value: "5432"
+            - Name: POSTGRES_DB
+              Value:
+                Ref: PostgresDbName
+            - Name: POSTGRES_USER
+              Value:
+                Ref: PostgresDbUsername
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-region:
+                Ref: AWS::Region
+              awslogs-group:
+                Ref: LogGroup
+              awslogs-stream-prefix: ecs
+
+  ServiceSnubaApi:
+    Type: AWS::ECS::Service
+    DependsOn:
+      - ListenerHTTPSDefault
+    Properties: 
+      Cluster:
+        Ref: ClusterWeb
+      TaskDefinition:
+        Ref: TaskDefinitionSnubaApi
+      DeploymentConfiguration:
+        MinimumHealthyPercent: 100
+        MaximumPercent: 200
+      DesiredCount:
+        Ref: MinCountSnubaApi
+      HealthCheckGracePeriodSeconds: 30
+      LaunchType: FARGATE
+      PropagateTags: SERVICE
+      NetworkConfiguration: 
+        AwsvpcConfiguration:
+          AssignPublicIp: DISABLED
+          Subnets:
+            - Ref: PrivateSubnet1
+            - Ref: PrivateSubnet2
+            - Ref: PrivateSubnet3
+          SecurityGroups:
+            - Ref: Ec2SecurityGroup
+      LoadBalancers:
+        - ContainerName: sentry-snuba-api
+          ContainerPort: 1218
+          TargetGroupArn:
+            Ref: TargetGroupSnubaApi
+
+  TargetGroupSnubaApi:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      HealthCheckIntervalSeconds: 10
+      HealthCheckPath: /
+      HealthCheckTimeoutSeconds: 5
+      UnhealthyThresholdCount: 2
+      HealthyThresholdCount: 2
+      Port: 1218
+      Protocol: HTTP
+      TargetGroupAttributes:
+        - Key: deregistration_delay.timeout_seconds
+          Value: 30
+      TargetType: ip
+      VpcId:
+        Ref: VPC
+
+  HttpListenerRuleSnubaApi:
+    Type: AWS::ElasticLoadBalancingV2::ListenerRule
+    Properties:
+      Actions:
+      - Type: forward
+        TargetGroupArn:
+          Ref: TargetGroupSnubaApi
+      Conditions:
+      - Field: host-header
+        Values:
+        - Ref: SnubaApiDnsRecord
+      ListenerArn:
+        Ref: ListenerHTTPDefault
+      Priority: 20
+
+  HttpsListenerRuleSnubaApi:
+    Type: AWS::ElasticLoadBalancingV2::ListenerRule
+    Properties:
+      Actions:
+      - Type: forward
+        TargetGroupArn:
+          Ref: TargetGroupSnubaApi
+      Conditions:
+      - Field: host-header
+        Values:
+        - Ref: SnubaApiDnsRecord
+      ListenerArn:
+        Ref: ListenerHTTPSDefault
+      Priority: 30
+
+  AutoScalingTargetSnubaApi:
+    Type: AWS::ApplicationAutoScaling::ScalableTarget
+    Properties:
+      MaxCapacity:
+        Ref: MaxCountSnubaApi
+      MinCapacity:
+        Ref: MinCountSnubaApi
+      ResourceId:
+        Fn::Sub: service/${ClusterWeb}/${ServiceSnubaApi.Name}
+      RoleARN:
+        Fn::GetAtt: ScalingRole.Arn
+      ScalableDimension: ecs:service:DesiredCount
+      ServiceNamespace: ecs
+
+  RequestsAutoScalingPolicySnubaApi:
+    Type: AWS::ApplicationAutoScaling::ScalingPolicy
+    Properties:
+      PolicyName:
+        Fn::Sub: ${AWS::StackName}-Requests-SnubaApi
+      PolicyType: TargetTrackingScaling
+      ScalingTargetId:
+        Ref: AutoScalingTargetSnubaApi
+      TargetTrackingScalingPolicyConfiguration:
+        DisableScaleIn: false
+        TargetValue: 50 
+        ScaleInCooldown: 600
+        ScaleOutCooldown: 60
+        PredefinedMetricSpecification: 
+          PredefinedMetricType: ALBRequestCountPerTarget
+          ResourceLabel:
+            Fn::Sub: ${LoadBalancer.LoadBalancerFullName}/${TargetGroupSnubaApi.TargetGroupFullName}
+
+  TaskDefinitionSentryWeb:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      NetworkMode: awsvpc
+      RequiresCompatibilities:
+        - FARGATE
+      Cpu: "512"
+      Memory: 1GB
+      ExecutionRoleArn:
+        Fn::GetAtt: ExecutionRole.Arn
+      TaskRoleArn:
+        Fn::GetAtt: TaskRole.Arn
+      Volumes:
+        - Name: sentry-conf-vol
+          Host: {}
+      ContainerDefinitions:
+        - Name: sentry-config
+          Image:
+            Ref: BashImage
+          Essential: false
+          Command:
+            - -c
+            - echo $SENTRY_CONFIG | base64 -d - | tee /config-sentry/config.yml
+          Environment:
+            - Name: SENTRY_CONFIG
+              Value:
+                Fn::Base64:
+                  Fn::Sub: |
+                    system.secret-key: "${SentrySystemSecretKey}"
+                    system.url-prefix: "https://${SentryDnsRecord}"
+
+                    filestore.backend: 's3'
+                    filestore.options:
+                      bucket_name: "${SentryBucket}"
+                      default_acl: "private"
+                      acl: "private"
+          MountPoints:
+            - ContainerPath: /config-sentry/
+              SourceVolume: sentry-conf-vol
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-region:
+                Ref: AWS::Region
+              awslogs-group:
+                Ref: LogGroup
+              awslogs-stream-prefix: ecs
+        - Name: sentry-web
+          Image:
+            Ref: SentryImage
+          Entrypoint: ["/bin/bash"]
+          Command:
+            - "-c"
+            - "cp /config-sentry/config.yml /etc/sentry/config.yml && sentry run web"
+          Essential: true
+          DependsOn:
+          - Condition: COMPLETE
+            ContainerName: sentry-config
+          MountPoints:
+            - ContainerPath: /config-sentry/
+              SourceVolume: sentry-conf-vol
+          PortMappings:
+          - ContainerPort: 9000
+            Protocol: tcp
+          Secrets:
+            - Name: POSTGRES_PASSWORD
+              ValueFrom:
+                Ref: SecretPostgresPassword
+          Environment:
+            - Name: AWS_DEFAULT_REGION
+              Value:
+                Ref: AWS::Region
+            - name: C_FORCE_ROOT
+              Value: "true"
+            - Name: SNUBA
+              Value: 
+                Fn::Sub: http://${SnubaApiDnsRecord}
+            - Name: REDIS_HOST
+              Value:
+                Fn::GetAtt: ElastiCacheNode.RedisEndpoint.Address
+            - Name: REDIS_PORT
+              Value: "6379"
+            - Name: CLICKHOUSE_HOST
+              Value:
+                Fn::GetAtt: ElbClickHouse.DNSName
+            - Name: CLICKHOUSE_PORT
+              Value: "9000"
+            - Name: CLICKHOUSE_SINGLE_NODE
+              Value: "true"
+            - Name: KAFKA_BROKER_1
+              Value:
+                Fn::GetAtt: KafkaGetBrokersLambdaResult.KafkaBroker1
+            - Name: KAFKA_BROKER_2
+              Value:
+                Fn::GetAtt: KafkaGetBrokersLambdaResult.KafkaBroker2
+            - Name: KAFKA_BROKER_3
+              Value:
+                Fn::GetAtt: KafkaGetBrokersLambdaResult.KafkaBroker3
+            - Name: POSTGRES_HOST
+              Value:
+                Fn::GetAtt: RDSInstance.Endpoint.Address
+            - Name: POSTGRES_PORT
+              Value: "5432"
+            - Name: POSTGRES_DB
+              Value:
+                Ref: PostgresDbName
+            - Name: POSTGRES_USER
+              Value:
+                Ref: PostgresDbUsername
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-region:
+                Ref: AWS::Region
+              awslogs-group:
+                Ref: LogGroup
+              awslogs-stream-prefix: ecs
+
+  ServiceSentryWeb:
+    Type: AWS::ECS::Service
+    DependsOn:
+      - ListenerHTTPSDefault
+    Properties: 
+      Cluster:
+        Ref: ClusterWeb
+      TaskDefinition:
+        Ref: TaskDefinitionSentryWeb
+      DeploymentConfiguration:
+        MinimumHealthyPercent: 100
+        MaximumPercent: 200
+      DesiredCount:
+        Ref: MinCountSentryWeb
+      HealthCheckGracePeriodSeconds: 30
+      LaunchType: FARGATE
+      PropagateTags: SERVICE
+      NetworkConfiguration: 
+        AwsvpcConfiguration:
+          AssignPublicIp: DISABLED
+          Subnets:
+            - Ref: PrivateSubnet1
+            - Ref: PrivateSubnet2
+            - Ref: PrivateSubnet3
+          SecurityGroups:
+            - Ref: Ec2SecurityGroup
+      LoadBalancers:
+        - ContainerName: sentry-web
+          ContainerPort: 9000
+          TargetGroupArn:
+            Ref: TargetGroupSentryWeb
+
+  TargetGroupSentryWeb:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      HealthCheckIntervalSeconds: 10
+      HealthCheckPath: /_health/
+      HealthCheckTimeoutSeconds: 5
+      UnhealthyThresholdCount: 2
+      HealthyThresholdCount: 2
+      Port: 9000
+      Protocol: HTTP
+      TargetGroupAttributes:
+        - Key: deregistration_delay.timeout_seconds
+          Value: 30
+      TargetType: ip
+      VpcId:
+        Ref: VPC
+
+  HttpListenerRuleSentryWeb:
+    Type: AWS::ElasticLoadBalancingV2::ListenerRule
+    Properties:
+      Actions:
+      - Type: forward
+        TargetGroupArn:
+          Ref: TargetGroupSentryWeb
+      Conditions:
+      - Field: host-header
+        Values:
+        - Ref: SentryDnsRecord
+      ListenerArn:
+        Ref: ListenerHTTPProxy
+      Priority: 40
+
+  HttpsListenerRuleSentryWeb:
+    Type: AWS::ElasticLoadBalancingV2::ListenerRule
+    Properties:
+      Actions:
+      - Type: forward
+        TargetGroupArn:
+          Ref: TargetGroupSentryWeb
+      Conditions:
+      - Field: host-header
+        Values:
+        - Ref: SentryDnsRecord
+      ListenerArn:
+        Ref: ListenerHTTPSProxy
+      Priority: 50
+
+  AutoScalingTargetSentryWeb:
+    Type: AWS::ApplicationAutoScaling::ScalableTarget
+    Properties:
+      MaxCapacity:
+        Ref: MaxCountSentryWeb
+      MinCapacity:
+        Ref: MinCountSentryWeb
+      ResourceId:
+        Fn::Sub: service/${ClusterWeb}/${ServiceSentryWeb.Name}
+      RoleARN:
+        Fn::GetAtt: ScalingRole.Arn
+      ScalableDimension: ecs:service:DesiredCount
+      ServiceNamespace: ecs
+
+  RequestsAutoScalingPolicySentryWeb:
+    Type: AWS::ApplicationAutoScaling::ScalingPolicy
+    Properties:
+      PolicyName:
+        Fn::Sub: ${AWS::StackName}-Requests-SentryWeb
+      PolicyType: TargetTrackingScaling
+      ScalingTargetId:
+        Ref: AutoScalingTargetSentryWeb
+      TargetTrackingScalingPolicyConfiguration:
+        DisableScaleIn: false
+        TargetValue: 50 
+        ScaleInCooldown: 600
+        ScaleOutCooldown: 60
+        PredefinedMetricSpecification: 
+          PredefinedMetricType: ALBRequestCountPerTarget
+          ResourceLabel:
+            Fn::Sub: ${LoadBalancerProxy.LoadBalancerFullName}/${TargetGroupSentryWeb.TargetGroupFullName}
+
+  TaskDefinitionRelay:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      NetworkMode: awsvpc
+      RequiresCompatibilities:
+        - FARGATE
+      Cpu: "256"
+      Memory: 0.5GB
+      ExecutionRoleArn:
+        Fn::GetAtt: ExecutionRole.Arn
+      TaskRoleArn:
+        Fn::GetAtt: TaskRole.Arn
+      Volumes:
+        - Name: relay-conf-vol
+          Host: {}
+      ContainerDefinitions:
+        - Name: relay-config
+          Image:
+            Ref: BashImage
+          Essential: false
+          Command:
+            - -c
+            - echo $RELAY_CONFIG | base64 -d - | tee /config-relay/config.yml
+          Environment:
+            - Name: RELAY_CONFIG
+              Value:
+                Fn::Base64:
+                  Fn::Sub: |
+                    relay:
+                      mode: proxy
+                      upstream: "https://${SentryDnsRecord}/"
+                      host: 0.0.0.0
+                      port: 3000
+
+                    processing:
+                      enabled: true
+
+                      kafka_config:
+                        - name: "bootstrap.servers"
+                          value: "${KafkaGetBrokersLambdaResult.KafkaBroker1},${KafkaGetBrokersLambdaResult.KafkaBroker2},${KafkaGetBrokersLambdaResult.KafkaBroker3}"
+                        - name: "message.max.bytes"
+                          value: 50000000  # 50MB or bust
+                      redis: "redis://:@${ElastiCacheNode.RedisEndpoint.Address}:6379"
+          MountPoints:
+            - ContainerPath: /config-relay/
+              SourceVolume: relay-conf-vol
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-region:
+                Ref: AWS::Region
+              awslogs-group:
+                Ref: LogGroup
+              awslogs-stream-prefix: ecs
+        - Name: relay
+          Image:
+            Ref: RelayImage
+          Essential: true
+          DependsOn:
+          - Condition: COMPLETE
+            ContainerName: relay-config
+          PortMappings:
+          - ContainerPort: 3000
+            Protocol: tcp
+          MountPoints:
+            - ContainerPath: /config-relay/
+              SourceVolume: relay-conf-vol
+          Secrets:
+            - Name: POSTGRES_PASSWORD
+              ValueFrom:
+                Ref: SecretPostgresPassword
+          Environment:
+            - Name: AWS_DEFAULT_REGION
+              Value:
+                Ref: AWS::Region
+            - Name: CONFIG_FILE_PATH
+              Value: /config-relay/config.yml
+            - Name: RELAY_PORT
+              Value: "3000"
+            - Name: REDIS_HOST
+              Value:
+                Fn::GetAtt: ElastiCacheNode.RedisEndpoint.Address
+            - Name: REDIS_PORT
+              Value: "6379"
+            - Name: CLICKHOUSE_HOST
+              Value:
+                Fn::GetAtt: ElbClickHouse.DNSName
+            - Name: CLICKHOUSE_PORT
+              Value: "9000"
+            - Name: CLICKHOUSE_SINGLE_NODE
+              Value: "true"
+            - Name: KAFKA_BROKER_1
+              Value:
+                Fn::GetAtt: KafkaGetBrokersLambdaResult.KafkaBroker1
+            - Name: KAFKA_BROKER_2
+              Value:
+                Fn::GetAtt: KafkaGetBrokersLambdaResult.KafkaBroker2
+            - Name: KAFKA_BROKER_3
+              Value:
+                Fn::GetAtt: KafkaGetBrokersLambdaResult.KafkaBroker3
+            - Name: POSTGRES_HOST
+              Value:
+                Fn::GetAtt: RDSInstance.Endpoint.Address
+            - Name: POSTGRES_PORT
+              Value: "5432"
+            - Name: POSTGRES_DB
+              Value:
+                Ref: PostgresDbName
+            - Name: POSTGRES_USER
+              Value:
+                Ref: PostgresDbUsername
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-region:
+                Ref: AWS::Region
+              awslogs-group:
+                Ref: LogGroup
+              awslogs-stream-prefix: ecs
+
+  ServiceRelay:
+    Type: AWS::ECS::Service
+    DependsOn:
+      - ListenerHTTPSDefault
+    Properties: 
+      Cluster:
+        Ref: ClusterWeb
+      TaskDefinition:
+        Ref: TaskDefinitionRelay
+      DeploymentConfiguration:
+        MinimumHealthyPercent: 100
+        MaximumPercent: 200
+      DesiredCount:
+        Ref: MinCountSentryRelay
+      HealthCheckGracePeriodSeconds: 30
+      LaunchType: FARGATE
+      PropagateTags: SERVICE
+      NetworkConfiguration: 
+        AwsvpcConfiguration:
+          AssignPublicIp: DISABLED
+          Subnets:
+            - Ref: PrivateSubnet1
+            - Ref: PrivateSubnet2
+            - Ref: PrivateSubnet3
+          SecurityGroups:
+            - Ref: Ec2SecurityGroup
+      LoadBalancers:
+        - ContainerName: relay
+          ContainerPort: 3000
+          TargetGroupArn:
+            Ref: TargetGroupRelay
+
+  TargetGroupRelay:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      HealthCheckIntervalSeconds: 10
+      HealthCheckPath: /api/relay/healthcheck/ready/
+      HealthCheckTimeoutSeconds: 5
+      UnhealthyThresholdCount: 2
+      HealthyThresholdCount: 2
+      Port: 3000
+      Protocol: HTTP
+      TargetGroupAttributes:
+        - Key: deregistration_delay.timeout_seconds
+          Value: 30
+      TargetType: ip
+      VpcId:
+        Ref: VPC
+
+  HttpListenerRuleRelay:
+    Type: AWS::ElasticLoadBalancingV2::ListenerRule
+    Properties:
+      Actions:
+      - Type: forward
+        TargetGroupArn:
+          Ref: TargetGroupRelay
+      Conditions:
+      - Field: host-header
+        Values:
+          - Ref: RelayDnsRecord
+      ListenerArn:
+        Ref: ListenerHTTPDefault
+      Priority: 60
+
+  HttpsListenerRuleRelay:
+    Type: AWS::ElasticLoadBalancingV2::ListenerRule
+    Properties:
+      Actions:
+      - Type: forward
+        TargetGroupArn:
+          Ref: TargetGroupRelay
+      Conditions:
+      - Field: host-header
+        Values:
+          - Ref: RelayDnsRecord
+      ListenerArn:
+        Ref: ListenerHTTPSDefault
+      Priority: 70
+
+  AutoScalingTargetSentryRelay:
+    Type: AWS::ApplicationAutoScaling::ScalableTarget
+    Properties:
+      MaxCapacity:
+        Ref: MaxCountSentryRelay
+      MinCapacity:
+        Ref: MinCountSentryRelay
+      ResourceId:
+        Fn::Sub: service/${ClusterWeb}/${ServiceRelay.Name}
+      RoleARN:
+        Fn::GetAtt: ScalingRole.Arn
+      ScalableDimension: ecs:service:DesiredCount
+      ServiceNamespace: ecs
+
+  RequestsAutoScalingPolicySentryRelay:
+    Type: AWS::ApplicationAutoScaling::ScalingPolicy
+    Properties:
+      PolicyName:
+        Fn::Sub: ${AWS::StackName}-Requests-SentryRelay
+      PolicyType: TargetTrackingScaling
+      ScalingTargetId:
+        Ref: AutoScalingTargetSentryRelay
+      TargetTrackingScalingPolicyConfiguration:
+        DisableScaleIn: false
+        TargetValue: 50 
+        ScaleInCooldown: 600
+        ScaleOutCooldown: 60
+        PredefinedMetricSpecification: 
+          PredefinedMetricType: ALBRequestCountPerTarget
+          ResourceLabel:
+            Fn::Sub: ${LoadBalancer.LoadBalancerFullName}/${TargetGroupRelay.TargetGroupFullName}
+
+  TaskDefinitionSentryCron:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      NetworkMode: awsvpc
+      RequiresCompatibilities:
+        - FARGATE
+      Cpu: "1024"
+      Memory: 2GB
+      ExecutionRoleArn:
+        Fn::GetAtt: ExecutionRole.Arn
+      TaskRoleArn:
+        Fn::GetAtt: TaskRole.Arn
+      Volumes:
+        - Name: sentry-conf-vol
+          Host: {}
+      ContainerDefinitions:
+        - Name: sentry-config
+          Image:
+            Ref: BashImage
+          Essential: false
+          Command:
+            - -c
+            - echo $SENTRY_CONFIG | base64 -d - | tee /config-sentry/config.yml
+          Environment:
+            - Name: SENTRY_CONFIG
+              Value:
+                Fn::Base64:
+                  Fn::Sub: |
+                    system.secret-key: "${SentrySystemSecretKey}"
+                    system.url-prefix: "https://${SentryDnsRecord}"
+
+                    filestore.backend: 's3'
+                    filestore.options:
+                      bucket_name: "${SentryBucket}"
+                      default_acl: "private"
+                      acl: "private"
+          MountPoints:
+            - ContainerPath: /config-sentry/
+              SourceVolume: sentry-conf-vol
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-region:
+                Ref: AWS::Region
+              awslogs-group:
+                Ref: LogGroup
+              awslogs-stream-prefix: ecs
+        - Name: sentry-cron
+          Image:
+            Ref: SentryImage
+          Essential: true
+          DependsOn:
+          - Condition: COMPLETE
+            ContainerName: sentry-config
+          MountPoints:
+            - ContainerPath: /config-sentry/
+              SourceVolume: sentry-conf-vol
+          Entrypoint: ["/bin/bash"]
+          Command:
+            - "-c"
+            - "cp /config-sentry/config.yml /etc/sentry/config.yml && sentry run cron"
+          Secrets:
+            - Name: POSTGRES_PASSWORD
+              ValueFrom:
+                Ref: SecretPostgresPassword
+          Environment:
+            - Name: AWS_DEFAULT_REGION
+              Value:
+                Ref: AWS::Region
+            - name: C_FORCE_ROOT
+              Value: "true"
+            - Name: SNUBA
+              Value: 
+                Fn::Sub: http://${SnubaApiDnsRecord}
+            - Name: REDIS_HOST
+              Value:
+                Fn::GetAtt: ElastiCacheNode.RedisEndpoint.Address
+            - Name: REDIS_PORT
+              Value: "6379"
+            - Name: CLICKHOUSE_HOST
+              Value:
+                Fn::GetAtt: ElbClickHouse.DNSName
+            - Name: CLICKHOUSE_PORT
+              Value: "9000"
+            - Name: CLICKHOUSE_SINGLE_NODE
+              Value: "true"
+            - Name: KAFKA_BROKER_1
+              Value:
+                Fn::GetAtt: KafkaGetBrokersLambdaResult.KafkaBroker1
+            - Name: KAFKA_BROKER_2
+              Value:
+                Fn::GetAtt: KafkaGetBrokersLambdaResult.KafkaBroker2
+            - Name: KAFKA_BROKER_3
+              Value:
+                Fn::GetAtt: KafkaGetBrokersLambdaResult.KafkaBroker3
+            - Name: POSTGRES_HOST
+              Value:
+                Fn::GetAtt: RDSInstance.Endpoint.Address
+            - Name: POSTGRES_PORT
+              Value: "5432"
+            - Name: POSTGRES_DB
+              Value:
+                Ref: PostgresDbName
+            - Name: POSTGRES_USER
+              Value:
+                Ref: PostgresDbUsername 
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-region:
+                Ref: AWS::Region
+              awslogs-group:
+                Ref: LogGroup
+              awslogs-stream-prefix: ecs
+
+  ServiceSentryCron:
+    Type: AWS::ECS::Service
+    Properties: 
+      Cluster:
+        Ref: ClusterWorkers
+      TaskDefinition:
+        Ref: TaskDefinitionSentryCron
+      DeploymentConfiguration:
+        MinimumHealthyPercent: 100
+        MaximumPercent: 200
+      DesiredCount:
+        Ref: DesiredCountSentryCron
+      PropagateTags: SERVICE
+      NetworkConfiguration: 
+        AwsvpcConfiguration:
+          AssignPublicIp: DISABLED
+          Subnets:
+            - Ref: PrivateSubnet1
+            - Ref: PrivateSubnet2
+            - Ref: PrivateSubnet3
+          SecurityGroups:
+            - Ref: Ec2SecurityGroup
+
+  TaskDefinitionSentryIngestAttachments:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      NetworkMode: awsvpc
+      RequiresCompatibilities:
+        - FARGATE
+      Cpu: "512"
+      Memory: 1GB
+      ExecutionRoleArn:
+        Fn::GetAtt: ExecutionRole.Arn
+      TaskRoleArn:
+        Fn::GetAtt: TaskRole.Arn
+      Volumes:
+        - Name: sentry-conf-vol
+          Host: {}
+      ContainerDefinitions:
+        - Name: sentry-config
+          Image:
+            Ref: BashImage
+          Essential: false
+          Command:
+            - -c
+            - echo $SENTRY_CONFIG | base64 -d - | tee /config-sentry/config.yml
+          Environment:
+            - Name: SENTRY_CONFIG
+              Value:
+                Fn::Base64:
+                  Fn::Sub: |
+                    system.secret-key: "${SentrySystemSecretKey}"
+                    system.url-prefix: "https://${SentryDnsRecord}"
+
+                    filestore.backend: 's3'
+                    filestore.options:
+                      bucket_name: "${SentryBucket}"
+                      default_acl: "private"
+                      acl: "private"
+          MountPoints:
+            - ContainerPath: /config-sentry/
+              SourceVolume: sentry-conf-vol
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-region:
+                Ref: AWS::Region
+              awslogs-group:
+                Ref: LogGroup
+              awslogs-stream-prefix: ecs
+        - Name: sentry-ingest-attachments
+          Image:
+            Ref: SentryImage
+          Essential: true
+          DependsOn:
+          - Condition: COMPLETE
+            ContainerName: sentry-config
+          MountPoints:
+            - ContainerPath: /config-sentry/
+              SourceVolume: sentry-conf-vol
+          Entrypoint: ["/bin/bash"]
+          Command:
+            - "-c"
+            - "cp /config-sentry/config.yml /etc/sentry/config.yml && sentry run ingest-consumer --consumer-type attachments"
+          Secrets:
+            - Name: POSTGRES_PASSWORD
+              ValueFrom:
+                Ref: SecretPostgresPassword
+          Environment:
+            - Name: AWS_DEFAULT_REGION
+              Value:
+                Ref: AWS::Region
+            - name: C_FORCE_ROOT
+              Value: "true"
+            - Name: SNUBA
+              Value: 
+                Fn::Sub: http://${SnubaApiDnsRecord}
+            - Name: REDIS_HOST
+              Value:
+                Fn::GetAtt: ElastiCacheNode.RedisEndpoint.Address
+            - Name: REDIS_PORT
+              Value: "6379"
+            - Name: CLICKHOUSE_HOST
+              Value:
+                Fn::GetAtt: ElbClickHouse.DNSName
+            - Name: CLICKHOUSE_PORT
+              Value: "9000"
+            - Name: CLICKHOUSE_SINGLE_NODE
+              Value: "true"
+            - Name: KAFKA_BROKER_1
+              Value:
+                Fn::GetAtt: KafkaGetBrokersLambdaResult.KafkaBroker1
+            - Name: KAFKA_BROKER_2
+              Value:
+                Fn::GetAtt: KafkaGetBrokersLambdaResult.KafkaBroker2
+            - Name: KAFKA_BROKER_3
+              Value:
+                Fn::GetAtt: KafkaGetBrokersLambdaResult.KafkaBroker3
+            - Name: POSTGRES_HOST
+              Value:
+                Fn::GetAtt: RDSInstance.Endpoint.Address
+            - Name: POSTGRES_PORT
+              Value: "5432"
+            - Name: POSTGRES_DB
+              Value:
+                Ref: PostgresDbName
+            - Name: POSTGRES_USER
+              Value:
+                Ref: PostgresDbUsername
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-region:
+                Ref: AWS::Region
+              awslogs-group:
+                Ref: LogGroup
+              awslogs-stream-prefix: ecs
+
+  ServiceSentryIngestAttachments:
+    Type: AWS::ECS::Service
+    Properties: 
+      Cluster:
+        Ref: ClusterWorkers
+      TaskDefinition:
+        Ref: TaskDefinitionSentryIngestAttachments
+      DeploymentConfiguration:
+        MinimumHealthyPercent: 100
+        MaximumPercent: 200
+      DesiredCount:
+        Ref: MinCountSentryIngestAttachments
+      PropagateTags: SERVICE
+      NetworkConfiguration: 
+        AwsvpcConfiguration:
+          AssignPublicIp: DISABLED
+          Subnets:
+            - Ref: PrivateSubnet1
+            - Ref: PrivateSubnet2
+            - Ref: PrivateSubnet3
+          SecurityGroups:
+            - Ref: Ec2SecurityGroup
+
+  AutoScalingTargetSentryIngestAttachments:
+    Type: AWS::ApplicationAutoScaling::ScalableTarget
+    Properties:
+      MaxCapacity:
+        Ref: MaxCountSentryIngestAttachments
+      MinCapacity:
+        Ref: MinCountSentryIngestAttachments
+      ResourceId:
+        Fn::Sub: service/${ClusterWorkers}/${ServiceSentryIngestAttachments.Name}
+      RoleARN:
+        Fn::GetAtt: ScalingRole.Arn
+      ScalableDimension: ecs:service:DesiredCount
+      ServiceNamespace: ecs
+
+  CpuAutoScalingPolicySentryIngestAttachments:
+    Type: AWS::ApplicationAutoScaling::ScalingPolicy
+    Properties:
+      PolicyName:
+        Fn::Sub: ${AWS::StackName}-Cpu-SentryIngestAttachments
+      PolicyType: TargetTrackingScaling
+      ScalingTargetId:
+        Ref: AutoScalingTargetSentryIngestAttachments
+      TargetTrackingScalingPolicyConfiguration:
+        DisableScaleIn: false
+        TargetValue: 40
+        ScaleInCooldown: 600
+        ScaleOutCooldown: 60
+        PredefinedMetricSpecification: 
+          PredefinedMetricType: ECSServiceAverageCPUUtilization
+
+  RamAutoScalingPolicySentryIngestAttachments:
+    Type: AWS::ApplicationAutoScaling::ScalingPolicy
+    Properties:
+      PolicyName:
+        Fn::Sub: ${AWS::StackName}-Ram-SentryIngestAttachments
+      PolicyType: TargetTrackingScaling
+      ScalingTargetId:
+        Ref: AutoScalingTargetSentryIngestAttachments
+      TargetTrackingScalingPolicyConfiguration:
+        DisableScaleIn: false
+        TargetValue: 40 
+        ScaleInCooldown: 600
+        ScaleOutCooldown: 60
+        PredefinedMetricSpecification: 
+          PredefinedMetricType: ECSServiceAverageMemoryUtilization
+
+  TaskDefinitionSentryIngestEvents:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      NetworkMode: awsvpc
+      RequiresCompatibilities:
+        - FARGATE
+      Cpu: "512"
+      Memory: 1GB
+      ExecutionRoleArn:
+        Fn::GetAtt: ExecutionRole.Arn
+      TaskRoleArn:
+        Fn::GetAtt: TaskRole.Arn
+      Volumes:
+        - Name: sentry-conf-vol
+          Host: {}
+      ContainerDefinitions:
+        - Name: sentry-config
+          Image:
+            Ref: BashImage
+          Essential: false
+          Command:
+            - -c
+            - echo $SENTRY_CONFIG | base64 -d - | tee /config-sentry/config.yml
+          Environment:
+            - Name: SENTRY_CONFIG
+              Value:
+                Fn::Base64:
+                  Fn::Sub: |
+                    system.secret-key: "${SentrySystemSecretKey}"
+                    system.url-prefix: "https://${SentryDnsRecord}"
+
+                    filestore.backend: 's3'
+                    filestore.options:
+                      bucket_name: "${SentryBucket}"
+                      default_acl: "private"
+                      acl: "private"
+          MountPoints:
+            - ContainerPath: /config-sentry/
+              SourceVolume: sentry-conf-vol
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-region:
+                Ref: AWS::Region
+              awslogs-group:
+                Ref: LogGroup
+              awslogs-stream-prefix: ecs
+        - Name: sentry-ingest-events
+          Image:
+            Ref: SentryImage
+          Essential: true
+          DependsOn:
+          - Condition: COMPLETE
+            ContainerName: sentry-config
+          MountPoints:
+            - ContainerPath: /config-sentry/
+              SourceVolume: sentry-conf-vol
+          Entrypoint: ["/bin/bash"]
+          Command:
+            - "-c"
+            - "cp /config-sentry/config.yml /etc/sentry/config.yml && sentry run ingest-consumer --consumer-type events"
+          Secrets:
+            - Name: POSTGRES_PASSWORD
+              ValueFrom:
+                Ref: SecretPostgresPassword
+          Environment:
+            - Name: AWS_DEFAULT_REGION
+              Value:
+                Ref: AWS::Region
+            - name: C_FORCE_ROOT
+              Value: "true"
+            - Name: SNUBA
+              Value: 
+                Fn::Sub: http://${SnubaApiDnsRecord}
+            - Name: REDIS_HOST
+              Value:
+                Fn::GetAtt: ElastiCacheNode.RedisEndpoint.Address
+            - Name: REDIS_PORT
+              Value: "6379"
+            - Name: CLICKHOUSE_HOST
+              Value:
+                Fn::GetAtt: ElbClickHouse.DNSName
+            - Name: CLICKHOUSE_PORT
+              Value: "9000"
+            - Name: CLICKHOUSE_SINGLE_NODE
+              Value: "true"
+            - Name: KAFKA_BROKER_1
+              Value:
+                Fn::GetAtt: KafkaGetBrokersLambdaResult.KafkaBroker1
+            - Name: KAFKA_BROKER_2
+              Value:
+                Fn::GetAtt: KafkaGetBrokersLambdaResult.KafkaBroker2
+            - Name: KAFKA_BROKER_3
+              Value:
+                Fn::GetAtt: KafkaGetBrokersLambdaResult.KafkaBroker3
+            - Name: POSTGRES_HOST
+              Value:
+                Fn::GetAtt: RDSInstance.Endpoint.Address
+            - Name: POSTGRES_PORT
+              Value: "5432"
+            - Name: POSTGRES_DB
+              Value:
+                Ref: PostgresDbName
+            - Name: POSTGRES_USER
+              Value:
+                Ref: PostgresDbUsername 
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-region:
+                Ref: AWS::Region
+              awslogs-group:
+                Ref: LogGroup
+              awslogs-stream-prefix: ecs
+
+  ServiceSentryIngestEvents:
+    Type: AWS::ECS::Service
+    Properties: 
+      Cluster:
+        Ref: ClusterWorkers
+      TaskDefinition:
+        Ref: TaskDefinitionSentryIngestEvents
+      DeploymentConfiguration:
+        MinimumHealthyPercent: 100
+        MaximumPercent: 200
+      DesiredCount:
+        Ref: MinCountSentryIngestEvents
+      PropagateTags: SERVICE
+      NetworkConfiguration: 
+        AwsvpcConfiguration:
+          AssignPublicIp: DISABLED
+          Subnets:
+            - Ref: PrivateSubnet1
+            - Ref: PrivateSubnet2
+            - Ref: PrivateSubnet3
+          SecurityGroups:
+            - Ref: Ec2SecurityGroup
+
+  AutoScalingTargetSentryIngestEvents:
+    Type: AWS::ApplicationAutoScaling::ScalableTarget
+    Properties:
+      MaxCapacity:
+        Ref: MaxCountSentryIngestEvents
+      MinCapacity:
+        Ref: MinCountSentryIngestEvents
+      ResourceId:
+        Fn::Sub: service/${ClusterWorkers}/${ServiceSentryIngestEvents.Name}
+      RoleARN:
+        Fn::GetAtt: ScalingRole.Arn
+      ScalableDimension: ecs:service:DesiredCount
+      ServiceNamespace: ecs
+
+  CpuAutoScalingPolicySentryIngestEvents:
+    Type: AWS::ApplicationAutoScaling::ScalingPolicy
+    Properties:
+      PolicyName:
+        Fn::Sub: ${AWS::StackName}-Cpu-SentryIngestEvents
+      PolicyType: TargetTrackingScaling
+      ScalingTargetId:
+        Ref: AutoScalingTargetSentryIngestEvents
+      TargetTrackingScalingPolicyConfiguration:
+        DisableScaleIn: false
+        TargetValue: 40
+        ScaleInCooldown: 600
+        ScaleOutCooldown: 60
+        PredefinedMetricSpecification: 
+          PredefinedMetricType: ECSServiceAverageCPUUtilization
+
+  RamAutoScalingPolicySentryIngestEvents:
+    Type: AWS::ApplicationAutoScaling::ScalingPolicy
+    Properties:
+      PolicyName:
+        Fn::Sub: ${AWS::StackName}-Ram-SentryIngestEvents
+      PolicyType: TargetTrackingScaling
+      ScalingTargetId:
+        Ref: AutoScalingTargetSentryIngestEvents
+      TargetTrackingScalingPolicyConfiguration:
+        DisableScaleIn: false
+        TargetValue: 40 
+        ScaleInCooldown: 600
+        ScaleOutCooldown: 60
+        PredefinedMetricSpecification: 
+          PredefinedMetricType: ECSServiceAverageMemoryUtilization
+
+  TaskDefinitionSentryIngestTransactions:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      NetworkMode: awsvpc
+      RequiresCompatibilities:
+        - FARGATE
+      Cpu: "512"
+      Memory: 1GB
+      ExecutionRoleArn:
+        Fn::GetAtt: ExecutionRole.Arn
+      TaskRoleArn:
+        Fn::GetAtt: TaskRole.Arn
+      Volumes:
+        - Name: sentry-conf-vol
+          Host: {}
+      ContainerDefinitions:
+        - Name: sentry-config
+          Image:
+            Ref: BashImage
+          Essential: false
+          Command:
+            - -c
+            - echo $SENTRY_CONFIG | base64 -d - | tee /config-sentry/config.yml
+          Environment:
+            - Name: SENTRY_CONFIG
+              Value:
+                Fn::Base64:
+                  Fn::Sub: |
+                    system.secret-key: "${SentrySystemSecretKey}"
+                    system.url-prefix: "https://${SentryDnsRecord}"
+
+                    filestore.backend: 's3'
+                    filestore.options:
+                      bucket_name: "${SentryBucket}"
+                      default_acl: "private"
+                      acl: "private"
+          MountPoints:
+            - ContainerPath: /config-sentry/
+              SourceVolume: sentry-conf-vol
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-region:
+                Ref: AWS::Region
+              awslogs-group:
+                Ref: LogGroup
+              awslogs-stream-prefix: ecs
+        - Name: sentry-ingest-transactions
+          Image:
+            Ref: SentryImage
+          Essential: true
+          DependsOn:
+          - Condition: COMPLETE
+            ContainerName: sentry-config
+          MountPoints:
+            - ContainerPath: /config-sentry/
+              SourceVolume: sentry-conf-vol
+          Entrypoint: ["/bin/bash"]
+          Command:
+            - "-c"
+            - "cp /config-sentry/config.yml /etc/sentry/config.yml && sentry run ingest-consumer --consumer-type transactions"
+          Secrets:
+            - Name: POSTGRES_PASSWORD
+              ValueFrom:
+                Ref: SecretPostgresPassword
+          Environment:
+            - Name: AWS_DEFAULT_REGION
+              Value:
+                Ref: AWS::Region
+            - name: C_FORCE_ROOT
+              Value: "true"
+            - Name: SNUBA
+              Value: 
+                Fn::Sub: http://${SnubaApiDnsRecord}
+            - Name: REDIS_HOST
+              Value:
+                Fn::GetAtt: ElastiCacheNode.RedisEndpoint.Address
+            - Name: REDIS_PORT
+              Value: "6379"
+            - Name: CLICKHOUSE_HOST
+              Value:
+                Fn::GetAtt: ElbClickHouse.DNSName
+            - Name: CLICKHOUSE_PORT
+              Value: "9000"
+            - Name: CLICKHOUSE_SINGLE_NODE
+              Value: "true"
+            - Name: KAFKA_BROKER_1
+              Value:
+                Fn::GetAtt: KafkaGetBrokersLambdaResult.KafkaBroker1
+            - Name: KAFKA_BROKER_2
+              Value:
+                Fn::GetAtt: KafkaGetBrokersLambdaResult.KafkaBroker2
+            - Name: KAFKA_BROKER_3
+              Value:
+                Fn::GetAtt: KafkaGetBrokersLambdaResult.KafkaBroker3
+            - Name: POSTGRES_HOST
+              Value:
+                Fn::GetAtt: RDSInstance.Endpoint.Address
+            - Name: POSTGRES_PORT
+              Value: "5432"
+            - Name: POSTGRES_DB
+              Value:
+                Ref: PostgresDbName
+            - Name: POSTGRES_USER
+              Value:
+                Ref: PostgresDbUsername
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-region:
+                Ref: AWS::Region
+              awslogs-group:
+                Ref: LogGroup
+              awslogs-stream-prefix: ecs
+
+  ServiceSentryIngestTransactions:
+    Type: AWS::ECS::Service
+    Properties: 
+      Cluster:
+        Ref: ClusterWorkers
+      TaskDefinition:
+        Ref: TaskDefinitionSentryIngestTransactions
+      DeploymentConfiguration:
+        MinimumHealthyPercent: 100
+        MaximumPercent: 200
+      DesiredCount:
+        Ref: MinCountSentryIngestTransactions
+      PropagateTags: SERVICE
+      NetworkConfiguration: 
+        AwsvpcConfiguration:
+          AssignPublicIp: DISABLED
+          Subnets:
+            - Ref: PrivateSubnet1
+            - Ref: PrivateSubnet2
+            - Ref: PrivateSubnet3
+          SecurityGroups:
+            - Ref: Ec2SecurityGroup
+
+  AutoScalingTargetSentryIngestTransactions:
+    Type: AWS::ApplicationAutoScaling::ScalableTarget
+    Properties:
+      MaxCapacity:
+        Ref: MaxCountSentryIngestTransactions
+      MinCapacity:
+        Ref: MinCountSentryIngestTransactions
+      ResourceId:
+        Fn::Sub: service/${ClusterWorkers}/${ServiceSentryIngestTransactions.Name}
+      RoleARN:
+        Fn::GetAtt: ScalingRole.Arn
+      ScalableDimension: ecs:service:DesiredCount
+      ServiceNamespace: ecs
+
+  CpuAutoScalingPolicySentryIngestTransactions:
+    Type: AWS::ApplicationAutoScaling::ScalingPolicy
+    Properties:
+      PolicyName:
+        Fn::Sub: ${AWS::StackName}-Cpu-SentryIngestTransactions
+      PolicyType: TargetTrackingScaling
+      ScalingTargetId:
+        Ref: AutoScalingTargetSentryIngestTransactions
+      TargetTrackingScalingPolicyConfiguration:
+        DisableScaleIn: false
+        TargetValue: 40
+        ScaleInCooldown: 600
+        ScaleOutCooldown: 60
+        PredefinedMetricSpecification: 
+          PredefinedMetricType: ECSServiceAverageCPUUtilization
+
+  RamAutoScalingPolicySentryIngestTransactions:
+    Type: AWS::ApplicationAutoScaling::ScalingPolicy
+    Properties:
+      PolicyName:
+        Fn::Sub: ${AWS::StackName}-Ram-SentryIngestTransactions
+      PolicyType: TargetTrackingScaling
+      ScalingTargetId:
+        Ref: AutoScalingTargetSentryIngestTransactions
+      TargetTrackingScalingPolicyConfiguration:
+        DisableScaleIn: false
+        TargetValue: 40 
+        ScaleInCooldown: 600
+        ScaleOutCooldown: 60
+        PredefinedMetricSpecification: 
+          PredefinedMetricType: ECSServiceAverageMemoryUtilization
+
+  TaskDefinitionSentryPostProcessForward:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      NetworkMode: awsvpc
+      RequiresCompatibilities:
+        - FARGATE
+      Cpu: "512"
+      Memory: 1GB
+      ExecutionRoleArn:
+        Fn::GetAtt: ExecutionRole.Arn
+      TaskRoleArn:
+        Fn::GetAtt: TaskRole.Arn
+      Volumes:
+        - Name: sentry-conf-vol
+          Host: {}
+      ContainerDefinitions:
+        - Name: sentry-config
+          Image:
+            Ref: BashImage
+          Essential: false
+          Command:
+            - -c
+            - echo $SENTRY_CONFIG | base64 -d - | tee /config-sentry/config.yml
+          Environment:
+            - Name: SENTRY_CONFIG
+              Value:
+                Fn::Base64:
+                  Fn::Sub: |
+                    system.secret-key: "${SentrySystemSecretKey}"
+                    system.url-prefix: "https://${SentryDnsRecord}"
+
+                    filestore.backend: 's3'
+                    filestore.options:
+                      bucket_name: "${SentryBucket}"
+                      default_acl: "private"
+                      acl: "private"
+          MountPoints:
+            - ContainerPath: /config-sentry/
+              SourceVolume: sentry-conf-vol
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-region:
+                Ref: AWS::Region
+              awslogs-group:
+                Ref: LogGroup
+              awslogs-stream-prefix: ecs
+        - Name: sentry-post-process-forward
+          Image:
+            Ref: SentryImage
+          Essential: true
+          DependsOn:
+          - Condition: COMPLETE
+            ContainerName: sentry-config
+          MountPoints:
+            - ContainerPath: /config-sentry/
+              SourceVolume: sentry-conf-vol
+          Entrypoint: ["/bin/bash"]
+          Command:
+            - "-c"
+            - "cp /config-sentry/config.yml /etc/sentry/config.yml && sentry run post-process-forwarder --commit-batch-size 1"
+          Secrets:
+            - Name: POSTGRES_PASSWORD
+              ValueFrom:
+                Ref: SecretPostgresPassword
+          Environment:
+            - Name: AWS_DEFAULT_REGION
+              Value:
+                Ref: AWS::Region
+            - name: C_FORCE_ROOT
+              Value: "true"
+            - Name: SNUBA
+              Value: 
+                Fn::Sub: http://${SnubaApiDnsRecord}
+            - Name: REDIS_HOST
+              Value:
+                Fn::GetAtt: ElastiCacheNode.RedisEndpoint.Address
+            - Name: REDIS_PORT
+              Value: "6379"
+            - Name: CLICKHOUSE_HOST
+              Value:
+                Fn::GetAtt: ElbClickHouse.DNSName
+            - Name: CLICKHOUSE_PORT
+              Value: "9000"
+            - Name: CLICKHOUSE_SINGLE_NODE
+              Value: "true"
+            - Name: KAFKA_BROKER_1
+              Value:
+                Fn::GetAtt: KafkaGetBrokersLambdaResult.KafkaBroker1
+            - Name: KAFKA_BROKER_2
+              Value:
+                Fn::GetAtt: KafkaGetBrokersLambdaResult.KafkaBroker2
+            - Name: KAFKA_BROKER_3
+              Value:
+                Fn::GetAtt: KafkaGetBrokersLambdaResult.KafkaBroker3
+            - Name: POSTGRES_HOST
+              Value:
+                Fn::GetAtt: RDSInstance.Endpoint.Address
+            - Name: POSTGRES_PORT
+              Value: "5432"
+            - Name: POSTGRES_DB
+              Value:
+                Ref: PostgresDbName
+            - Name: POSTGRES_USER
+              Value:
+                Ref: PostgresDbUsername
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-region:
+                Ref: AWS::Region
+              awslogs-group:
+                Ref: LogGroup
+              awslogs-stream-prefix: ecs
+
+  ServiceSentryPostProcessForward:
+    Type: AWS::ECS::Service
+    Properties: 
+      Cluster:
+        Ref: ClusterWorkers
+      TaskDefinition:
+        Ref: TaskDefinitionSentryPostProcessForward
+      DeploymentConfiguration:
+        MinimumHealthyPercent: 100
+        MaximumPercent: 200
+      DesiredCount:
+        Ref: MinCountSentryPostProcessForward
+      PropagateTags: SERVICE
+      NetworkConfiguration: 
+        AwsvpcConfiguration:
+          AssignPublicIp: DISABLED
+          Subnets:
+            - Ref: PrivateSubnet1
+            - Ref: PrivateSubnet2
+            - Ref: PrivateSubnet3
+          SecurityGroups:
+            - Ref: Ec2SecurityGroup
+
+  AutoScalingTargetSentryPostProcessForward:
+    Type: AWS::ApplicationAutoScaling::ScalableTarget
+    Properties:
+      MaxCapacity:
+        Ref: MaxCountSentryIngestTransactions
+      MinCapacity:
+        Ref: MinCountSentryIngestTransactions
+      ResourceId:
+        Fn::Sub: service/${ClusterWorkers}/${ServiceSentryPostProcessForward.Name}
+      RoleARN:
+        Fn::GetAtt: ScalingRole.Arn
+      ScalableDimension: ecs:service:DesiredCount
+      ServiceNamespace: ecs
+
+  CpuAutoScalingPolicySentryPostProcessForward:
+    Type: AWS::ApplicationAutoScaling::ScalingPolicy
+    Properties:
+      PolicyName:
+        Fn::Sub: ${AWS::StackName}-Cpu-SentryPostProcessForward
+      PolicyType: TargetTrackingScaling
+      ScalingTargetId:
+        Ref: AutoScalingTargetSentryPostProcessForward
+      TargetTrackingScalingPolicyConfiguration:
+        DisableScaleIn: false
+        TargetValue: 40
+        ScaleInCooldown: 600
+        ScaleOutCooldown: 60
+        PredefinedMetricSpecification: 
+          PredefinedMetricType: ECSServiceAverageCPUUtilization
+
+  RamAutoScalingPolicySentryPostProcessForward:
+    Type: AWS::ApplicationAutoScaling::ScalingPolicy
+    Properties:
+      PolicyName:
+        Fn::Sub: ${AWS::StackName}-Ram-SentryPostProcessForward
+      PolicyType: TargetTrackingScaling
+      ScalingTargetId:
+        Ref: AutoScalingTargetSentryPostProcessForward
+      TargetTrackingScalingPolicyConfiguration:
+        DisableScaleIn: false
+        TargetValue: 40 
+        ScaleInCooldown: 600
+        ScaleOutCooldown: 60
+        PredefinedMetricSpecification: 
+          PredefinedMetricType: ECSServiceAverageMemoryUtilization            
+
+  TaskDefinitionSnubaSessionsConsumer:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      NetworkMode: awsvpc
+      RequiresCompatibilities:
+        - FARGATE
+      Cpu: "256"
+      Memory: 0.5GB
+      ExecutionRoleArn:
+        Fn::GetAtt: ExecutionRole.Arn
+      TaskRoleArn:
+        Fn::GetAtt: TaskRole.Arn
+      ContainerDefinitions:
+        - Name: sentry-snuba-sessions-consumer
+          Image:
+            Ref: SnubaImage
+          Entrypoint: ["snuba", "consumer", "--storage", "sessions_raw", "--auto-offset-reset=latest", "--max-batch-time-ms", "750"]
+          Secrets:
+            - Name: POSTGRES_PASSWORD
+              ValueFrom:
+                Ref: SecretPostgresPassword
+          Environment:
+            - Name: AWS_DEFAULT_REGION
+              Value:
+                Ref: AWS::Region
+            - Name: REDIS_HOST
+              Value:
+                Fn::GetAtt: ElastiCacheNode.RedisEndpoint.Address
+            - Name: REDIS_PORT
+              Value: "6379"
+            - Name: CLICKHOUSE_HOST
+              Value:
+                Fn::GetAtt: ElbClickHouse.DNSName
+            - Name: CLICKHOUSE_PORT
+              Value: "9000"
+            - Name: CLICKHOUSE_HTTP_PORT
+              Value: "8123"
+            - Name: CLICKHOUSE_SINGLE_NODE
+              Value: "true"
+            - Name: CLICKHOUSE_DATABASE
+              Value: "default"
+            - Name: KAFKA_BROKER_1
+              Value:
+                Fn::GetAtt: KafkaGetBrokersLambdaResult.KafkaBroker1
+            - Name: KAFKA_BROKER_2
+              Value:
+                Fn::GetAtt: KafkaGetBrokersLambdaResult.KafkaBroker2
+            - Name: KAFKA_BROKER_3
+              Value:
+                Fn::GetAtt: KafkaGetBrokersLambdaResult.KafkaBroker3
+            - Name: DEFAULT_BROKERS
+              Value:
+                Fn::GetAtt: KafkaGetBrokersLambdaResult.BootstrapBrokerString
+            - Name: POSTGRES_HOST
+              Value:
+                Fn::GetAtt: RDSInstance.Endpoint.Address
+            - Name: POSTGRES_PORT
+              Value: "5432"
+            - Name: POSTGRES_DB
+              Value:
+                Ref: PostgresDbName
+            - Name: POSTGRES_USER
+              Value:
+                Ref: PostgresDbUsername
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-region:
+                Ref: AWS::Region
+              awslogs-group:
+                Ref: LogGroup
+              awslogs-stream-prefix: ecs
+
+  ServiceSnubaSessionsConsumer:
+    Type: AWS::ECS::Service
+    Properties: 
+      Cluster:
+        Ref: ClusterWorkers
+      TaskDefinition:
+        Ref: TaskDefinitionSnubaSessionsConsumer
+      DeploymentConfiguration:
+        MinimumHealthyPercent: 100
+        MaximumPercent: 200
+      DesiredCount:
+        Ref: MinCountSnubaSessionsConsumer
+      PropagateTags: SERVICE
+      NetworkConfiguration: 
+        AwsvpcConfiguration:
+          AssignPublicIp: DISABLED
+          Subnets:
+            - Ref: PrivateSubnet1
+            - Ref: PrivateSubnet2
+            - Ref: PrivateSubnet3
+          SecurityGroups:
+            - Ref: Ec2SecurityGroup
+
+  AutoScalingTargetSnubaSessionsConsumer:
+    Type: AWS::ApplicationAutoScaling::ScalableTarget
+    Properties:
+      MaxCapacity:
+        Ref: MaxCountSnubaSessionsConsumer
+      MinCapacity:
+        Ref: MinCountSnubaSessionsConsumer
+      ResourceId:
+        Fn::Sub: service/${ClusterWorkers}/${ServiceSnubaSessionsConsumer.Name}
+      RoleARN:
+        Fn::GetAtt: ScalingRole.Arn
+      ScalableDimension: ecs:service:DesiredCount
+      ServiceNamespace: ecs
+
+  CpuAutoScalingPolicySnubaSessionsConsumer:
+    Type: AWS::ApplicationAutoScaling::ScalingPolicy
+    Properties:
+      PolicyName:
+        Fn::Sub: ${AWS::StackName}-Cpu-SnubaSessionsConsumer
+      PolicyType: TargetTrackingScaling
+      ScalingTargetId:
+        Ref: AutoScalingTargetSnubaSessionsConsumer
+      TargetTrackingScalingPolicyConfiguration:
+        DisableScaleIn: false
+        TargetValue: 40
+        ScaleInCooldown: 600
+        ScaleOutCooldown: 60
+        PredefinedMetricSpecification: 
+          PredefinedMetricType: ECSServiceAverageCPUUtilization
+
+  RamAutoScalingPolicySnubaSessionsConsumer:
+    Type: AWS::ApplicationAutoScaling::ScalingPolicy
+    Properties:
+      PolicyName:
+        Fn::Sub: ${AWS::StackName}-Ram-SnubaSessionsConsumer
+      PolicyType: TargetTrackingScaling
+      ScalingTargetId:
+        Ref: AutoScalingTargetSnubaSessionsConsumer
+      TargetTrackingScalingPolicyConfiguration:
+        DisableScaleIn: false
+        TargetValue: 40 
+        ScaleInCooldown: 600
+        ScaleOutCooldown: 60
+        PredefinedMetricSpecification: 
+          PredefinedMetricType: ECSServiceAverageMemoryUtilization
+
+  TaskDefinitionSnubaEventsConsumer:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      NetworkMode: awsvpc
+      RequiresCompatibilities:
+        - FARGATE
+      Cpu: "256"
+      Memory: 0.5GB
+      ExecutionRoleArn:
+        Fn::GetAtt: ExecutionRole.Arn
+      TaskRoleArn:
+        Fn::GetAtt: TaskRole.Arn
+      ContainerDefinitions:
+        - Name: sentry-snuba-events-consumer
+          Image:
+            Ref: SnubaImage
+          Entrypoint: ["snuba", "consumer", "--storage", "events", "--auto-offset-reset=latest", "--max-batch-time-ms", "750"]
+          Secrets:
+            - Name: POSTGRES_PASSWORD
+              ValueFrom:
+                Ref: SecretPostgresPassword
+          Environment:
+            - Name: AWS_DEFAULT_REGION
+              Value:
+                Ref: AWS::Region
+            - Name: REDIS_HOST
+              Value:
+                Fn::GetAtt: ElastiCacheNode.RedisEndpoint.Address
+            - Name: REDIS_PORT
+              Value: "6379"
+            - Name: CLICKHOUSE_HOST
+              Value:
+                Fn::GetAtt: ElbClickHouse.DNSName
+            - Name: CLICKHOUSE_PORT
+              Value: "9000"
+            - Name: CLICKHOUSE_HTTP_PORT
+              Value: "8123"
+            - Name: CLICKHOUSE_SINGLE_NODE
+              Value: "true"
+            - Name: CLICKHOUSE_DATABASE
+              Value: "default"
+            - Name: KAFKA_BROKER_1
+              Value:
+                Fn::GetAtt: KafkaGetBrokersLambdaResult.KafkaBroker1
+            - Name: KAFKA_BROKER_2
+              Value:
+                Fn::GetAtt: KafkaGetBrokersLambdaResult.KafkaBroker2
+            - Name: KAFKA_BROKER_3
+              Value:
+                Fn::GetAtt: KafkaGetBrokersLambdaResult.KafkaBroker3
+            - Name: DEFAULT_BROKERS
+              Value:
+                Fn::GetAtt: KafkaGetBrokersLambdaResult.BootstrapBrokerString
+            - Name: POSTGRES_HOST
+              Value:
+                Fn::GetAtt: RDSInstance.Endpoint.Address
+            - Name: POSTGRES_PORT
+              Value: "5432"
+            - Name: POSTGRES_DB
+              Value:
+                Ref: PostgresDbName
+            - Name: POSTGRES_USER
+              Value:
+                Ref: PostgresDbUsername
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-region:
+                Ref: AWS::Region
+              awslogs-group:
+                Ref: LogGroup
+              awslogs-stream-prefix: ecs
+
+  ServiceSnubaEventsConsumer:
+    Type: AWS::ECS::Service
+    Properties: 
+      Cluster:
+        Ref: ClusterWorkers
+      TaskDefinition:
+        Ref: TaskDefinitionSnubaEventsConsumer
+      DeploymentConfiguration:
+        MinimumHealthyPercent: 100
+        MaximumPercent: 200
+      DesiredCount:
+        Ref: MinCountSnubaEventsConsumer
+      PropagateTags: SERVICE
+      NetworkConfiguration: 
+        AwsvpcConfiguration:
+          AssignPublicIp: DISABLED
+          Subnets:
+            - Ref: PrivateSubnet1
+            - Ref: PrivateSubnet2
+            - Ref: PrivateSubnet3
+          SecurityGroups:
+            - Ref: Ec2SecurityGroup
+
+  AutoScalingTargetSnubaEventsConsumer:
+    Type: AWS::ApplicationAutoScaling::ScalableTarget
+    Properties:
+      MaxCapacity:
+        Ref: MaxCountSnubaEventsConsumer
+      MinCapacity:
+        Ref: MinCountSnubaEventsConsumer
+      ResourceId:
+        Fn::Sub: service/${ClusterWorkers}/${ServiceSnubaEventsConsumer.Name}
+      RoleARN:
+        Fn::GetAtt: ScalingRole.Arn
+      ScalableDimension: ecs:service:DesiredCount
+      ServiceNamespace: ecs
+
+  CpuAutoScalingPolicySnubaEventsConsumer:
+    Type: AWS::ApplicationAutoScaling::ScalingPolicy
+    Properties:
+      PolicyName:
+        Fn::Sub: ${AWS::StackName}-Cpu-SnubaEventsConsumer
+      PolicyType: TargetTrackingScaling
+      ScalingTargetId:
+        Ref: AutoScalingTargetSnubaEventsConsumer
+      TargetTrackingScalingPolicyConfiguration:
+        DisableScaleIn: false
+        TargetValue: 40
+        ScaleInCooldown: 600
+        ScaleOutCooldown: 60
+        PredefinedMetricSpecification: 
+          PredefinedMetricType: ECSServiceAverageCPUUtilization
+
+  RamAutoScalingPolicySnubaEventsConsumer:
+    Type: AWS::ApplicationAutoScaling::ScalingPolicy
+    Properties:
+      PolicyName:
+        Fn::Sub: ${AWS::StackName}-Ram-SnubaEventsConsumer
+      PolicyType: TargetTrackingScaling
+      ScalingTargetId:
+        Ref: AutoScalingTargetSnubaEventsConsumer
+      TargetTrackingScalingPolicyConfiguration:
+        DisableScaleIn: false
+        TargetValue: 40 
+        ScaleInCooldown: 600
+        ScaleOutCooldown: 60
+        PredefinedMetricSpecification: 
+          PredefinedMetricType: ECSServiceAverageMemoryUtilization
+
+  TaskDefinitionSnubaOutcomesConsumer:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      NetworkMode: awsvpc
+      RequiresCompatibilities:
+        - FARGATE
+      Cpu: "256"
+      Memory: 0.5GB
+      ExecutionRoleArn:
+        Fn::GetAtt: ExecutionRole.Arn
+      TaskRoleArn:
+        Fn::GetAtt: TaskRole.Arn
+      ContainerDefinitions:
+        - Name: sentry-snuba-outcomes-consumer
+          Image:
+            Ref: SnubaImage
+          Entrypoint: ["snuba", "consumer", "--storage", "outcomes_raw", "--auto-offset-reset=latest", "--max-batch-size", "3"]
+          Secrets:
+            - Name: POSTGRES_PASSWORD
+              ValueFrom:
+                Ref: SecretPostgresPassword
+          Environment:
+            - Name: AWS_DEFAULT_REGION
+              Value:
+                Ref: AWS::Region
+            - Name: REDIS_HOST
+              Value:
+                Fn::GetAtt: ElastiCacheNode.RedisEndpoint.Address
+            - Name: REDIS_PORT
+              Value: "6379"
+            - Name: CLICKHOUSE_HOST
+              Value:
+                Fn::GetAtt: ElbClickHouse.DNSName
+            - Name: CLICKHOUSE_PORT
+              Value: "9000"
+            - Name: CLICKHOUSE_HTTP_PORT
+              Value: "8123"
+            - Name: CLICKHOUSE_SINGLE_NODE
+              Value: "true"
+            - Name: CLICKHOUSE_DATABASE
+              Value: "default"
+            - Name: KAFKA_BROKER_1
+              Value:
+                Fn::GetAtt: KafkaGetBrokersLambdaResult.KafkaBroker1
+            - Name: KAFKA_BROKER_2
+              Value:
+                Fn::GetAtt: KafkaGetBrokersLambdaResult.KafkaBroker2
+            - Name: KAFKA_BROKER_3
+              Value:
+                Fn::GetAtt: KafkaGetBrokersLambdaResult.KafkaBroker3
+            - Name: DEFAULT_BROKERS
+              Value:
+                Fn::GetAtt: KafkaGetBrokersLambdaResult.BootstrapBrokerString
+            - Name: POSTGRES_HOST
+              Value:
+                Fn::GetAtt: RDSInstance.Endpoint.Address
+            - Name: POSTGRES_PORT
+              Value: "5432"
+            - Name: POSTGRES_DB
+              Value:
+                Ref: PostgresDbName
+            - Name: POSTGRES_USER
+              Value:
+                Ref: PostgresDbUsername
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-region:
+                Ref: AWS::Region
+              awslogs-group:
+                Ref: LogGroup
+              awslogs-stream-prefix: ecs
+
+  ServiceSnubaOutcomesConsumer:
+    Type: AWS::ECS::Service
+    Properties: 
+      Cluster:
+        Ref: ClusterWorkers
+      TaskDefinition:
+        Ref: TaskDefinitionSnubaOutcomesConsumer
+      DeploymentConfiguration:
+        MinimumHealthyPercent: 100
+        MaximumPercent: 200
+      DesiredCount:
+        Ref: MinCountSnubaOutcomesConsumer
+      PropagateTags: SERVICE
+      NetworkConfiguration: 
+        AwsvpcConfiguration:
+          AssignPublicIp: DISABLED
+          Subnets:
+            - Ref: PrivateSubnet1
+            - Ref: PrivateSubnet2
+            - Ref: PrivateSubnet3
+          SecurityGroups:
+            - Ref: Ec2SecurityGroup
+
+  AutoScalingTargetSnubaOutcomesConsumer:
+    Type: AWS::ApplicationAutoScaling::ScalableTarget
+    Properties:
+      MaxCapacity:
+        Ref: MaxCountSnubaOutcomesConsumer
+      MinCapacity:
+        Ref: MinCountSnubaOutcomesConsumer
+      ResourceId:
+        Fn::Sub: service/${ClusterWorkers}/${ServiceSnubaOutcomesConsumer.Name}
+      RoleARN:
+        Fn::GetAtt: ScalingRole.Arn
+      ScalableDimension: ecs:service:DesiredCount
+      ServiceNamespace: ecs
+
+  CpuAutoScalingPolicySnubaOutcomesConsumer:
+    Type: AWS::ApplicationAutoScaling::ScalingPolicy
+    Properties:
+      PolicyName:
+        Fn::Sub: ${AWS::StackName}-Cpu-SnubaOutcomesConsumer
+      PolicyType: TargetTrackingScaling
+      ScalingTargetId:
+        Ref: AutoScalingTargetSnubaOutcomesConsumer
+      TargetTrackingScalingPolicyConfiguration:
+        DisableScaleIn: false
+        TargetValue: 40
+        ScaleInCooldown: 600
+        ScaleOutCooldown: 60
+        PredefinedMetricSpecification: 
+          PredefinedMetricType: ECSServiceAverageCPUUtilization
+
+  RamAutoScalingPolicySnubaOutcomesConsumer:
+    Type: AWS::ApplicationAutoScaling::ScalingPolicy
+    Properties:
+      PolicyName:
+        Fn::Sub: ${AWS::StackName}-Ram-SnubaOutcomesConsumer
+      PolicyType: TargetTrackingScaling
+      ScalingTargetId:
+        Ref: AutoScalingTargetSnubaOutcomesConsumer
+      TargetTrackingScalingPolicyConfiguration:
+        DisableScaleIn: false
+        TargetValue: 40 
+        ScaleInCooldown: 600
+        ScaleOutCooldown: 60
+        PredefinedMetricSpecification: 
+          PredefinedMetricType: ECSServiceAverageMemoryUtilization
+
+  TaskDefinitionSnubaTransactionsConsumer:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      NetworkMode: awsvpc
+      RequiresCompatibilities:
+        - FARGATE
+      Cpu: "256"
+      Memory: 0.5GB
+      ExecutionRoleArn:
+        Fn::GetAtt: ExecutionRole.Arn
+      TaskRoleArn:
+        Fn::GetAtt: TaskRole.Arn
+      ContainerDefinitions:
+        - Name: sentry-snuba-transactions-consumer
+          Image:
+            Ref: SnubaImage
+          Entrypoint: ["snuba", "consumer", "--storage", "transactions", "--consumer-group", "transactions_group", "--auto-offset-reset=latest", "--max-batch-time-ms", "750"]
+          Secrets:
+            - Name: POSTGRES_PASSWORD
+              ValueFrom:
+                Ref: SecretPostgresPassword
+          Environment:
+            - Name: AWS_DEFAULT_REGION
+              Value:
+                Ref: AWS::Region
+            - Name: REDIS_HOST
+              Value:
+                Fn::GetAtt: ElastiCacheNode.RedisEndpoint.Address
+            - Name: REDIS_PORT
+              Value: "6379"
+            - Name: CLICKHOUSE_HOST
+              Value:
+                Fn::GetAtt: ElbClickHouse.DNSName
+            - Name: CLICKHOUSE_PORT
+              Value: "9000"
+            - Name: CLICKHOUSE_HTTP_PORT
+              Value: "8123"
+            - Name: CLICKHOUSE_SINGLE_NODE
+              Value: "true"
+            - Name: CLICKHOUSE_DATABASE
+              Value: "default"
+            - Name: KAFKA_BROKER_1
+              Value:
+                Fn::GetAtt: KafkaGetBrokersLambdaResult.KafkaBroker1
+            - Name: KAFKA_BROKER_2
+              Value:
+                Fn::GetAtt: KafkaGetBrokersLambdaResult.KafkaBroker2
+            - Name: KAFKA_BROKER_3
+              Value:
+                Fn::GetAtt: KafkaGetBrokersLambdaResult.KafkaBroker3
+            - Name: DEFAULT_BROKERS
+              Value:
+                Fn::GetAtt: KafkaGetBrokersLambdaResult.BootstrapBrokerString
+            - Name: POSTGRES_HOST
+              Value:
+                Fn::GetAtt: RDSInstance.Endpoint.Address
+            - Name: POSTGRES_PORT
+              Value: "5432"
+            - Name: POSTGRES_DB
+              Value:
+                Ref: PostgresDbName
+            - Name: POSTGRES_USER
+              Value:
+                Ref: PostgresDbUsername
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-region:
+                Ref: AWS::Region
+              awslogs-group:
+                Ref: LogGroup
+              awslogs-stream-prefix: ecs
+
+  ServiceSnubaTransactionsConsumer:
+    Type: AWS::ECS::Service
+    Properties: 
+      Cluster:
+        Ref: ClusterWorkers
+      TaskDefinition:
+        Ref: TaskDefinitionSnubaTransactionsConsumer
+      DeploymentConfiguration:
+        MinimumHealthyPercent: 100
+        MaximumPercent: 200
+      DesiredCount:
+        Ref: MinCountSnubaTransactionsConsumer
+      PropagateTags: SERVICE
+      NetworkConfiguration: 
+        AwsvpcConfiguration:
+          AssignPublicIp: DISABLED
+          Subnets:
+            - Ref: PrivateSubnet1
+            - Ref: PrivateSubnet2
+            - Ref: PrivateSubnet3
+          SecurityGroups:
+            - Ref: Ec2SecurityGroup
+
+  AutoScalingTargetSnubaTransactionsConsumer:
+    Type: AWS::ApplicationAutoScaling::ScalableTarget
+    Properties:
+      MaxCapacity:
+        Ref: MaxCountSnubaTransactionsConsumer
+      MinCapacity:
+        Ref: MinCountSnubaTransactionsConsumer
+      ResourceId:
+        Fn::Sub: service/${ClusterWorkers}/${ServiceSnubaTransactionsConsumer.Name}
+      RoleARN:
+        Fn::GetAtt: ScalingRole.Arn
+      ScalableDimension: ecs:service:DesiredCount
+      ServiceNamespace: ecs
+
+  CpuAutoScalingPolicySnubaTransactionsConsumer:
+    Type: AWS::ApplicationAutoScaling::ScalingPolicy
+    Properties:
+      PolicyName:
+        Fn::Sub: ${AWS::StackName}-Cpu-SnubaTransactionsConsumer
+      PolicyType: TargetTrackingScaling
+      ScalingTargetId:
+        Ref: AutoScalingTargetSnubaTransactionsConsumer
+      TargetTrackingScalingPolicyConfiguration:
+        DisableScaleIn: false
+        TargetValue: 40
+        ScaleInCooldown: 600
+        ScaleOutCooldown: 60
+        PredefinedMetricSpecification: 
+          PredefinedMetricType: ECSServiceAverageCPUUtilization
+
+  RamAutoScalingPolicySnubaTransactionsConsumer:
+    Type: AWS::ApplicationAutoScaling::ScalingPolicy
+    Properties:
+      PolicyName:
+        Fn::Sub: ${AWS::StackName}-Ram-SnubaTransactionsConsumer
+      PolicyType: TargetTrackingScaling
+      ScalingTargetId:
+        Ref: AutoScalingTargetSnubaTransactionsConsumer
+      TargetTrackingScalingPolicyConfiguration:
+        DisableScaleIn: false
+        TargetValue: 40 
+        ScaleInCooldown: 600
+        ScaleOutCooldown: 60
+        PredefinedMetricSpecification: 
+          PredefinedMetricType: ECSServiceAverageMemoryUtilization      
+
+
+  TaskDefinitionSnubaEventsReplacer:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      NetworkMode: awsvpc
+      RequiresCompatibilities:
+        - FARGATE
+      Cpu: "256"
+      Memory: 0.5GB
+      ExecutionRoleArn:
+        Fn::GetAtt: ExecutionRole.Arn
+      TaskRoleArn:
+        Fn::GetAtt: TaskRole.Arn
+      ContainerDefinitions:
+        - Name: sentry-snuba-events-replacer
+          Image:
+            Ref: SnubaImage
+          Entrypoint: ["snuba", "replacer", "--storage", "events", "--auto-offset-reset=latest", "--max-batch-size", "3"]
+          Secrets:
+            - Name: POSTGRES_PASSWORD
+              ValueFrom:
+                Ref: SecretPostgresPassword
+          Environment:
+            - Name: AWS_DEFAULT_REGION
+              Value:
+                Ref: AWS::Region
+            - Name: REDIS_HOST
+              Value:
+                Fn::GetAtt: ElastiCacheNode.RedisEndpoint.Address
+            - Name: REDIS_PORT
+              Value: "6379"
+            - Name: CLICKHOUSE_HOST
+              Value:
+                Fn::GetAtt: ElbClickHouse.DNSName
+            - Name: CLICKHOUSE_PORT
+              Value: "9000"
+            - Name: CLICKHOUSE_HTTP_PORT
+              Value: "8123"
+            - Name: CLICKHOUSE_SINGLE_NODE
+              Value: "true"
+            - Name: CLICKHOUSE_DATABASE
+              Value: "default"
+            - Name: KAFKA_BROKER_1
+              Value:
+                Fn::GetAtt: KafkaGetBrokersLambdaResult.KafkaBroker1
+            - Name: KAFKA_BROKER_2
+              Value:
+                Fn::GetAtt: KafkaGetBrokersLambdaResult.KafkaBroker2
+            - Name: KAFKA_BROKER_3
+              Value:
+                Fn::GetAtt: KafkaGetBrokersLambdaResult.KafkaBroker3
+            - Name: DEFAULT_BROKERS
+              Value:
+                Fn::GetAtt: KafkaGetBrokersLambdaResult.BootstrapBrokerString
+            - Name: POSTGRES_HOST
+              Value:
+                Fn::GetAtt: RDSInstance.Endpoint.Address
+            - Name: POSTGRES_PORT
+              Value: "5432"
+            - Name: POSTGRES_DB
+              Value:
+                Ref: PostgresDbName
+            - Name: POSTGRES_USER
+              Value:
+                Ref: PostgresDbUsername
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-region:
+                Ref: AWS::Region
+              awslogs-group:
+                Ref: LogGroup
+              awslogs-stream-prefix: ecs
+
+  ServiceSnubaEventsReplacer:
+    Type: AWS::ECS::Service
+    Properties: 
+      Cluster:
+        Ref: ClusterWorkers
+      TaskDefinition:
+        Ref: TaskDefinitionSnubaEventsReplacer
+      DeploymentConfiguration:
+        MinimumHealthyPercent: 100
+        MaximumPercent: 200
+      DesiredCount:
+        Ref: MinCountSnubaEventsReplacer
+      PropagateTags: SERVICE
+      NetworkConfiguration: 
+        AwsvpcConfiguration:
+          AssignPublicIp: DISABLED
+          Subnets:
+            - Ref: PrivateSubnet1
+            - Ref: PrivateSubnet2
+            - Ref: PrivateSubnet3
+          SecurityGroups:
+            - Ref: Ec2SecurityGroup
+
+  AutoScalingTargetSnubaEventsReplacer:
+    Type: AWS::ApplicationAutoScaling::ScalableTarget
+    Properties:
+      MaxCapacity:
+        Ref: MaxCountSnubaEventsReplacer
+      MinCapacity:
+        Ref: MinCountSnubaEventsReplacer
+      ResourceId:
+        Fn::Sub: service/${ClusterWorkers}/${ServiceSnubaEventsReplacer.Name}
+      RoleARN:
+        Fn::GetAtt: ScalingRole.Arn
+      ScalableDimension: ecs:service:DesiredCount
+      ServiceNamespace: ecs
+
+  CpuAutoScalingPolicySnubaEventsReplacer:
+    Type: AWS::ApplicationAutoScaling::ScalingPolicy
+    Properties:
+      PolicyName:
+        Fn::Sub: ${AWS::StackName}-Cpu-SnubaEventsReplacer
+      PolicyType: TargetTrackingScaling
+      ScalingTargetId:
+        Ref: AutoScalingTargetSnubaEventsReplacer
+      TargetTrackingScalingPolicyConfiguration:
+        DisableScaleIn: false
+        TargetValue: 40
+        ScaleInCooldown: 600
+        ScaleOutCooldown: 60
+        PredefinedMetricSpecification: 
+          PredefinedMetricType: ECSServiceAverageCPUUtilization
+
+  RamAutoScalingPolicySnubaEventsReplacer:
+    Type: AWS::ApplicationAutoScaling::ScalingPolicy
+    Properties:
+      PolicyName:
+        Fn::Sub: ${AWS::StackName}-Ram-SnubaEventsReplacer
+      PolicyType: TargetTrackingScaling
+      ScalingTargetId:
+        Ref: AutoScalingTargetSnubaEventsReplacer
+      TargetTrackingScalingPolicyConfiguration:
+        DisableScaleIn: false
+        TargetValue: 40 
+        ScaleInCooldown: 600
+        ScaleOutCooldown: 60
+        PredefinedMetricSpecification: 
+          PredefinedMetricType: ECSServiceAverageMemoryUtilization
+
+  TaskDefinitionSentryWorkers:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      NetworkMode: awsvpc
+      RequiresCompatibilities:
+        - FARGATE
+      Cpu: "1024"
+      Memory: 2GB
+      ExecutionRoleArn:
+        Fn::GetAtt: ExecutionRole.Arn
+      TaskRoleArn:
+        Fn::GetAtt: TaskRole.Arn
+      Volumes:
+        - Name: sentry-conf-vol
+          Host: {}
+      ContainerDefinitions:
+        - Name: sentry-config
+          Image:
+            Ref: BashImage
+          Essential: false
+          Command:
+            - -c
+            - echo $SENTRY_CONFIG | base64 -d - | tee /config-sentry/config.yml
+          Environment:
+            - Name: SENTRY_CONFIG
+              Value:
+                Fn::Base64:
+                  Fn::Sub: |
+                    system.secret-key: "${SentrySystemSecretKey}"
+                    system.url-prefix: "https://${SentryDnsRecord}"
+
+                    filestore.backend: 's3'
+                    filestore.options:
+                      bucket_name: "${SentryBucket}"
+                      default_acl: "private"
+                      acl: "private"
+          MountPoints:
+            - ContainerPath: /config-sentry/
+              SourceVolume: sentry-conf-vol
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-region:
+                Ref: AWS::Region
+              awslogs-group:
+                Ref: LogGroup
+              awslogs-stream-prefix: ecs
+        - Name: sentry-worker
+          Image:
+            Ref: SentryImage
+          Essential: true
+          DependsOn:
+          - Condition: COMPLETE
+            ContainerName: sentry-config
+          MountPoints:
+            - ContainerPath: /config-sentry/
+              SourceVolume: sentry-conf-vol
+          Entrypoint: ["/bin/bash"]
+          Command:
+            - "-c"
+            - "cp /config-sentry/config.yml /etc/sentry/config.yml && sentry run worker -c 4"
+          Secrets:
+            - Name: POSTGRES_PASSWORD
+              ValueFrom:
+                Ref: SecretPostgresPassword
+          Environment:
+            - Name: AWS_DEFAULT_REGION
+              Value:
+                Ref: AWS::Region
+            - name: C_FORCE_ROOT
+              Value: "true"
+            - Name: SNUBA
+              Value: 
+                Fn::Sub: http://${SnubaApiDnsRecord}
+            - Name: REDIS_HOST
+              Value:
+                Fn::GetAtt: ElastiCacheNode.RedisEndpoint.Address
+            - Name: REDIS_PORT
+              Value: "6379"
+            - Name: CLICKHOUSE_HOST
+              Value:
+                Fn::GetAtt: ElbClickHouse.DNSName 
+            - Name: KAFKA_BROKER_1
+              Value:
+                Fn::GetAtt: KafkaGetBrokersLambdaResult.KafkaBroker1
+            - Name: KAFKA_BROKER_2
+              Value:
+                Fn::GetAtt: KafkaGetBrokersLambdaResult.KafkaBroker2
+            - Name: KAFKA_BROKER_3
+              Value:
+                Fn::GetAtt: KafkaGetBrokersLambdaResult.KafkaBroker3
+            - Name: POSTGRES_HOST
+              Value:
+                Fn::GetAtt: RDSInstance.Endpoint.Address
+            - Name: POSTGRES_PORT
+              Value: "5432"
+            - Name: POSTGRES_DB
+              Value:
+                Ref: PostgresDbName
+            - Name: POSTGRES_USER
+              Value:
+                Ref: PostgresDbUsername
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-region:
+                Ref: AWS::Region
+              awslogs-group:
+                Ref: LogGroup
+              awslogs-stream-prefix: ecs
+
+  ServiceSentryWorkers:
+    Type: AWS::ECS::Service
+    Properties: 
+      Cluster:
+        Ref: ClusterWorkers
+      TaskDefinition:
+        Ref: TaskDefinitionSentryWorkers
+      DeploymentConfiguration:
+        MinimumHealthyPercent: 100
+        MaximumPercent: 200
+      DesiredCount:
+        Ref: DesiredCountSentryWorkers
+      PropagateTags: SERVICE
+      NetworkConfiguration: 
+        AwsvpcConfiguration:
+          AssignPublicIp: DISABLED
+          Subnets:
+            - Ref: PrivateSubnet1
+            - Ref: PrivateSubnet2
+            - Ref: PrivateSubnet3
+          SecurityGroups:
+            - Ref: Ec2SecurityGroup
+
+  TaskDefinitionSentryMigration:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      NetworkMode: awsvpc
+      RequiresCompatibilities:
+        - FARGATE
+      Cpu: "1024"
+      Memory: 2GB
+      ExecutionRoleArn:
+        Fn::GetAtt: ExecutionRole.Arn
+      TaskRoleArn:
+        Fn::GetAtt: TaskRole.Arn
+      Volumes:
+        - Name: sentry-conf-vol
+          Host: {}
+      ContainerDefinitions:
+        - Name: sentry-config
+          Image:
+            Ref: BashImage
+          Essential: false
+          Command:
+            - -c
+            - echo $SENTRY_CONFIG | base64 -d - | tee /config-sentry/config.yml
+          Environment:
+            - Name: SENTRY_CONFIG
+              Value:
+                Fn::Base64:
+                  Fn::Sub: |
+                    system.secret-key: "${SentrySystemSecretKey}"
+                    system.url-prefix: "https://${SentryDnsRecord}"
+
+                    filestore.backend: 's3'
+                    filestore.options:
+                      bucket_name: "${SentryBucket}"
+                      default_acl: "private"
+                      acl: "private"
+          MountPoints:
+            - ContainerPath: /config-sentry/
+              SourceVolume: sentry-conf-vol
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-region:
+                Ref: AWS::Region
+              awslogs-group:
+                Ref: LogGroup
+              awslogs-stream-prefix: ecs
+        - Name: sentry-worker
+          Image:
+            Ref: SentryImage
+          Essential: true
+          DependsOn:
+          - Condition: COMPLETE
+            ContainerName: sentry-config
+          MountPoints:
+            - ContainerPath: /config-sentry/
+              SourceVolume: sentry-conf-vol
+          Entrypoint: ["/bin/bash"]
+          Command:
+            - "-c"
+            - "cp /config-sentry/config.yml /etc/sentry/config.yml && sentry upgrade"
+          Secrets:
+            - Name: POSTGRES_PASSWORD
+              ValueFrom:
+                Ref: SecretPostgresPassword
+          Environment:
+            - Name: AWS_DEFAULT_REGION
+              Value:
+                Ref: AWS::Region
+            - name: C_FORCE_ROOT
+              Value: "true"
+            - Name: SNUBA
+              Value: 
+                Fn::Sub: http://${SnubaApiDnsRecord}
+            - Name: REDIS_HOST
+              Value:
+                Fn::GetAtt: ElastiCacheNode.RedisEndpoint.Address
+            - Name: REDIS_PORT
+              Value: "6379"
+            - Name: CLICKHOUSE_HOST
+              Value:
+                Fn::GetAtt: ElbClickHouse.DNSName 
+            - Name: KAFKA_BROKER_1
+              Value:
+                Fn::GetAtt: KafkaGetBrokersLambdaResult.KafkaBroker1
+            - Name: KAFKA_BROKER_2
+              Value:
+                Fn::GetAtt: KafkaGetBrokersLambdaResult.KafkaBroker2
+            - Name: KAFKA_BROKER_3
+              Value:
+                Fn::GetAtt: KafkaGetBrokersLambdaResult.KafkaBroker3
+            - Name: POSTGRES_HOST
+              Value:
+                Fn::GetAtt: RDSInstance.Endpoint.Address
+            - Name: POSTGRES_PORT
+              Value: "5432"
+            - Name: POSTGRES_DB
+              Value:
+                Ref: PostgresDbName
+            - Name: POSTGRES_USER
+              Value:
+                Ref: PostgresDbUsername
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-region:
+                Ref: AWS::Region
+              awslogs-group:
+                Ref: LogGroup
+              awslogs-stream-prefix: ecs
+
+  SentryMigrationLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal: {Service: [lambda.amazonaws.com]}
+          Action: ['sts:AssumeRole']
+      Policies:
+      - PolicyName:
+          Fn::Sub: ${AWS::StackName}-Ecs
+        PolicyDocument:
+          Statement:
+          - Effect: Allow
+            Action:
+            - ecs:*
+            Resource: '*'
+      - PolicyName:
+          Fn::Sub: ${AWS::StackName}-CloudWatch
+        PolicyDocument:
+          Statement:
+          - Effect: Allow
+            Action:
+            - logs:*
+            - cloudwatch:*
+            Resource: '*'
+      - PolicyName:
+          Fn::Sub: ${AWS::StackName}-SSM
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action:
+                - secretsmanager:GetSecretValue
+              Resource:
+                - Ref: SecretPostgresPassword
+      - PolicyName:
+          Fn::Sub: ${AWS::StackName}-IAM
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action:
+                - iam:PassRole
+              Resource:
+                - Fn::GetAtt: ExecutionRole.Arn
+                - Fn::GetAtt: TaskRole.Arn
+
+  SentryMigrationLambdaFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      Handler: index.lambda_handler
+      Runtime: python3.8
+      Role:
+        Fn::GetAtt: SentryMigrationLambdaRole.Arn
+      Code:
+        ZipFile:
+          Fn::Sub: |
+            import boto3
+            from botocore.exceptions import ClientError
+            import json
+            import cfnresponse
+            from datetime import datetime
+
+            def lambda_handler(event, context):
+              data = {}
+
+              try:
+                ecs_client = boto3.client('ecs',region_name="${AWS::Region}")
+
+                if event['RequestType'] == 'Create':
+                  
+                  response = ecs_client.run_task(
+                    cluster='${ClusterWorkers}',
+                    networkConfiguration={
+                      'awsvpcConfiguration': {
+                        'subnets': ["${PrivateSubnet1}","${PrivateSubnet2}","${PrivateSubnet3}"],
+                            'securityGroups': [ "${Ec2SecurityGroup}"],
+                            'assignPublicIp': 'DISABLED'
+                        }
+                    },
+                    taskDefinition="${TaskDefinitionSentryMigration.TaskDefinitionArn}"
+                  )
+                  if "failures" in response and len(response["failures"]) > 0:
+                    print(response)
+                    data["Reason"] = "NOT_OK"
+                    cfnresponse.send(event, context, cfnresponse.FAILED, data)
+
+                else:
+                  data["Reason"] = "OK"
+                  
+                cfnresponse.send(event, context, cfnresponse.SUCCESS, data)
+              except Exception as e:
+                print(str(e))
+                data["Reason"] = str(e)
+                cfnresponse.send(event, context, cfnresponse.FAILED, data)
+
+  SentryMigrationLambdaResult:
+    Type: Custom::SentryMigration
+    Properties:
+      ServiceToken:
+        Fn::GetAtt: SentryMigrationLambdaFunction.Arn
+      SentryImage:
+        Ref: SentryImage
+
+  TaskDefinitionSnubaMigrations:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      NetworkMode: awsvpc
+      RequiresCompatibilities:
+        - FARGATE
+      Cpu: "1024"
+      Memory: 2GB
+      ExecutionRoleArn:
+        Fn::GetAtt: ExecutionRole.Arn
+      TaskRoleArn:
+        Fn::GetAtt: TaskRole.Arn
+      ContainerDefinitions:
+        - Name: sentry-snuba-migrations
+          Image:
+            Ref: SnubaImage
+          Entrypoint: ["snuba", "migrations", "migrate", "--force"]
+          Secrets:
+            - Name: POSTGRES_PASSWORD
+              ValueFrom:
+                Ref: SecretPostgresPassword
+          Environment:
+            - Name: AWS_DEFAULT_REGION
+              Value:
+                Ref: AWS::Region
+            - Name: REDIS_HOST
+              Value:
+                Fn::GetAtt: ElastiCacheNode.RedisEndpoint.Address
+            - Name: REDIS_PORT
+              Value: "6379"
+            - Name: CLICKHOUSE_HOST
+              Value:
+                Fn::GetAtt: ElbClickHouse.DNSName
+            - Name: CLICKHOUSE_PORT
+              Value: "9000"
+            - Name: CLICKHOUSE_HTTP_PORT
+              Value: "8123"
+            - Name: CLICKHOUSE_SINGLE_NODE
+              Value: "true"
+            - Name: CLICKHOUSE_DATABASE
+              Value: "default"
+            - Name: KAFKA_BROKER_1
+              Value:
+                Fn::GetAtt: KafkaGetBrokersLambdaResult.KafkaBroker1
+            - Name: KAFKA_BROKER_2
+              Value:
+                Fn::GetAtt: KafkaGetBrokersLambdaResult.KafkaBroker2
+            - Name: KAFKA_BROKER_3
+              Value:
+                Fn::GetAtt: KafkaGetBrokersLambdaResult.KafkaBroker3
+            - Name: DEFAULT_BROKERS
+              Value:
+                Fn::GetAtt: KafkaGetBrokersLambdaResult.BootstrapBrokerString
+            - Name: POSTGRES_HOST
+              Value:
+                Fn::GetAtt: RDSInstance.Endpoint.Address
+            - Name: POSTGRES_PORT
+              Value: "5432"
+            - Name: POSTGRES_DB
+              Value:
+                Ref: PostgresDbName
+            - Name: POSTGRES_USER
+              Value:
+                Ref: PostgresDbUsername
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-region:
+                Ref: AWS::Region
+              awslogs-group:
+                Ref: LogGroup
+              awslogs-stream-prefix: ecs
+
+  SnubaMigrationsLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal: {Service: [lambda.amazonaws.com]}
+          Action: ['sts:AssumeRole']
+      Policies:
+      - PolicyName:
+          Fn::Sub: ${AWS::StackName}-Ecs
+        PolicyDocument:
+          Statement:
+          - Effect: Allow
+            Action:
+            - ecs:*
+            Resource: '*'
+      - PolicyName:
+          Fn::Sub: ${AWS::StackName}-CloudWatch
+        PolicyDocument:
+          Statement:
+          - Effect: Allow
+            Action:
+            - logs:*
+            - cloudwatch:*
+            Resource: '*'
+      - PolicyName:
+          Fn::Sub: ${AWS::StackName}-SSM
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action:
+                - secretsmanager:GetSecretValue
+              Resource:
+                - Ref: SecretPostgresPassword
+      - PolicyName:
+          Fn::Sub: ${AWS::StackName}-IAM
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action:
+                - iam:PassRole
+              Resource:
+                - Fn::GetAtt: ExecutionRole.Arn
+                - Fn::GetAtt: TaskRole.Arn
+
+  SnubaMigrationsLambdaFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      Handler: index.lambda_handler
+      Runtime: python3.8
+      Role:
+        Fn::GetAtt: SnubaMigrationsLambdaRole.Arn
+      Code:
+        ZipFile:
+          Fn::Sub: |
+            import boto3
+            from botocore.exceptions import ClientError
+            import json
+            import cfnresponse
+            from datetime import datetime
+
+            def lambda_handler(event, context):
+              data = {}
+
+              try:
+                ecs_client = boto3.client('ecs',region_name="${AWS::Region}")
+
+                if event['RequestType'] == 'Create':
+                  
+                  response = ecs_client.run_task(
+                    cluster='${ClusterWorkers}',
+                    networkConfiguration={
+                      'awsvpcConfiguration': {
+                        'subnets': ["${PrivateSubnet1}","${PrivateSubnet2}","${PrivateSubnet3}"],
+                            'securityGroups': [ "${Ec2SecurityGroup}"],
+                            'assignPublicIp': 'DISABLED'
+                        }
+                    },
+                    taskDefinition="${TaskDefinitionSnubaMigrations.TaskDefinitionArn}"
+                  )
+                  if "failures" in response and len(response["failures"]) > 0:
+                    print(response)
+                    data["Reason"] = "NOT_OK"
+                    cfnresponse.send(event, context, cfnresponse.FAILED, data)
+
+                else:
+                  data["Reason"] = "OK"
+                  
+                cfnresponse.send(event, context, cfnresponse.SUCCESS, data)
+              except Exception as e:
+                print(str(e))
+                data["Reason"] = str(e)
+                cfnresponse.send(event, context, cfnresponse.FAILED, data)
+
+  SnubaMigrationsLambdaResult:
+    Type: Custom::SnubaMigrations
+    Properties:
+      ServiceToken:
+        Fn::GetAtt: SnubaMigrationsLambdaFunction.Arn
+      SentryImage:
+        Ref: SentryImage
+
+
+
