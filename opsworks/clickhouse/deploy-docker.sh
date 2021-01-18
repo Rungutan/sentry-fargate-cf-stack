@@ -2,7 +2,7 @@
 
 set -e
 
-package_file=clickhouse-$(git rev-parse --short HEAD).tar.gz
+package_file=clickhouse-$1
 
 rm -f script.sh
 rm -f *.tar.gz
