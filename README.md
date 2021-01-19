@@ -1,5 +1,7 @@
 # Sentry Performance Monitoring
 
+A reference of this article is available on the Rungutan Blog here -> https://rungutan.com/blog/sentry-performance-monitoring/.
+
 ## What is Performance Monitoring?
 
 Performance monitoring in web analytics is the act of regularly verifying and tracking how well and how consistently your digital platforms are performing. Tools for digital performance monitoring include dashboards and alert systems. By selecting a handful of strategic KPIs that you track regularly, you can easily monitor digital performance and take action if major changes in performance occur.
