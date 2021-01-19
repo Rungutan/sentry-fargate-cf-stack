@@ -366,6 +366,30 @@ Parameters:
     Type: String
     Default: sentry-relay.mydomain.com
 
+  # Sentry EMAIL parameters
+  SentryEmailBackend:
+    Type: String
+    Default: smtp
+    Description: To set up SES for using the SMTP interface follow this guide -> http://docs.aws.amazon.com/ses/latest/DeveloperGuide/send-email-smtp.html
+
+  SentryEmailUsername:
+    Type: String
+
+  SentryEmailPassword:
+    Type: String
+    NoEcho: true
+
+  SentryEmailPort:
+    Type: String
+    Default: "587"
+
+  SentryEmailHost:
+    Type: String
+    Description: email-smtp.${aws_region}.amazonaws.com 
+
+  SentryEmailFrom:
+    Type: String
+
 Metadata:
   AWS::CloudFormation::Interface:
     ParameterGroups:
@@ -458,6 +482,16 @@ Metadata:
         Parameters:
           - InitialAdminUserEmail
           - InitialAdminUserPassword
+
+      - Label:
+          default: Sentry email settings
+        Parameters:
+          - SentryEmailBackend
+          - SentryEmailUsername
+          - SentryEmailPassword
+          - SentryEmailPort
+          - SentryEmailHost
+          - SentryEmailFrom
 
 Resources:
 
@@ -1553,6 +1587,14 @@ Resources:
       SecretString:
         Ref: InitialAdminUserPassword
 
+  SecretSentryEmailPassword:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name:
+        Fn::Sub: ${AWS::StackName}-SecretSentryEmailPassword
+      SecretString:
+        Ref: SentryEmailPassword
+
   SentryBucket:
     Type: AWS::S3::Bucket
     DeletionPolicy: Retain
@@ -1811,6 +1853,7 @@ Resources:
               Resource:
                 - Ref: SecretPostgresPassword
                 - Ref: SecretAdminPassword
+                - Ref: SecretSentryEmailPassword
 
   TaskRole:
     Type: AWS::IAM::Role
@@ -1871,6 +1914,9 @@ Resources:
             - Name: POSTGRES_PASSWORD
               ValueFrom:
                 Ref: SecretPostgresPassword
+            - Name: SENTRY_EMAIL_PASSWORD
+              ValueFrom:
+                Ref: SecretSentryEmailPassword
           Environment:
             - Name: AWS_DEFAULT_REGION
               Value:
@@ -1914,6 +1960,21 @@ Resources:
             - Name: POSTGRES_USER
               Value:
                 Ref: PostgresDbUsername
+            - Name: SENTRY_EMAIL_BACKEND
+              Value:
+                Ref: SentryEmailBackend
+            - Name: SENTRY_EMAIL_USERNAME
+              Value:
+                Ref: SentryEmailUsername
+            - Name: SENTRY_EMAIL_PORT
+              Value:
+                Ref: SentryEmailPort
+            - Name: SENTRY_EMAIL_HOST
+              Value:
+                Ref: SentryEmailHost
+            - Name: SENTRY_EMAIL_FROM
+              Value:
+                Ref: SentryEmailFrom
           LogConfiguration:
             LogDriver: awslogs
             Options:
@@ -2102,6 +2163,9 @@ Resources:
             - Name: POSTGRES_PASSWORD
               ValueFrom:
                 Ref: SecretPostgresPassword
+            - Name: SENTRY_EMAIL_PASSWORD
+              ValueFrom:
+                Ref: SecretSentryEmailPassword
           Environment:
             - Name: AWS_DEFAULT_REGION
               Value:
@@ -2143,6 +2207,21 @@ Resources:
             - Name: POSTGRES_USER
               Value:
                 Ref: PostgresDbUsername
+            - Name: SENTRY_EMAIL_BACKEND
+              Value:
+                Ref: SentryEmailBackend
+            - Name: SENTRY_EMAIL_USERNAME
+              Value:
+                Ref: SentryEmailUsername
+            - Name: SENTRY_EMAIL_PORT
+              Value:
+                Ref: SentryEmailPort
+            - Name: SENTRY_EMAIL_HOST
+              Value:
+                Ref: SentryEmailHost
+            - Name: SENTRY_EMAIL_FROM
+              Value:
+                Ref: SentryEmailFrom
           LogConfiguration:
             LogDriver: awslogs
             Options:
@@ -2334,6 +2413,9 @@ Resources:
             - Name: POSTGRES_PASSWORD
               ValueFrom:
                 Ref: SecretPostgresPassword
+            - Name: SENTRY_EMAIL_PASSWORD
+              ValueFrom:
+                Ref: SecretSentryEmailPassword
           Environment:
             - Name: AWS_DEFAULT_REGION
               Value:
@@ -2374,6 +2456,21 @@ Resources:
             - Name: POSTGRES_USER
               Value:
                 Ref: PostgresDbUsername
+            - Name: SENTRY_EMAIL_BACKEND
+              Value:
+                Ref: SentryEmailBackend
+            - Name: SENTRY_EMAIL_USERNAME
+              Value:
+                Ref: SentryEmailUsername
+            - Name: SENTRY_EMAIL_PORT
+              Value:
+                Ref: SentryEmailPort
+            - Name: SENTRY_EMAIL_HOST
+              Value:
+                Ref: SentryEmailHost
+            - Name: SENTRY_EMAIL_FROM
+              Value:
+                Ref: SentryEmailFrom
           LogConfiguration:
             LogDriver: awslogs
             Options:
@@ -2559,6 +2656,9 @@ Resources:
             - Name: POSTGRES_PASSWORD
               ValueFrom:
                 Ref: SecretPostgresPassword
+            - Name: SENTRY_EMAIL_PASSWORD
+              ValueFrom:
+                Ref: SecretSentryEmailPassword
           Environment:
             - Name: AWS_DEFAULT_REGION
               Value:
@@ -2599,7 +2699,22 @@ Resources:
                 Ref: PostgresDbName
             - Name: POSTGRES_USER
               Value:
-                Ref: PostgresDbUsername 
+                Ref: PostgresDbUsername
+            - Name: SENTRY_EMAIL_BACKEND
+              Value:
+                Ref: SentryEmailBackend
+            - Name: SENTRY_EMAIL_USERNAME
+              Value:
+                Ref: SentryEmailUsername
+            - Name: SENTRY_EMAIL_PORT
+              Value:
+                Ref: SentryEmailPort
+            - Name: SENTRY_EMAIL_HOST
+              Value:
+                Ref: SentryEmailHost
+            - Name: SENTRY_EMAIL_FROM
+              Value:
+                Ref: SentryEmailFrom 
           LogConfiguration:
             LogDriver: awslogs
             Options:
@@ -2697,6 +2812,9 @@ Resources:
             - Name: POSTGRES_PASSWORD
               ValueFrom:
                 Ref: SecretPostgresPassword
+            - Name: SENTRY_EMAIL_PASSWORD
+              ValueFrom:
+                Ref: SecretSentryEmailPassword
           Environment:
             - Name: AWS_DEFAULT_REGION
               Value:
@@ -2738,6 +2856,21 @@ Resources:
             - Name: POSTGRES_USER
               Value:
                 Ref: PostgresDbUsername
+            - Name: SENTRY_EMAIL_BACKEND
+              Value:
+                Ref: SentryEmailBackend
+            - Name: SENTRY_EMAIL_USERNAME
+              Value:
+                Ref: SentryEmailUsername
+            - Name: SENTRY_EMAIL_PORT
+              Value:
+                Ref: SentryEmailPort
+            - Name: SENTRY_EMAIL_HOST
+              Value:
+                Ref: SentryEmailHost
+            - Name: SENTRY_EMAIL_FROM
+              Value:
+                Ref: SentryEmailFrom
           LogConfiguration:
             LogDriver: awslogs
             Options:
@@ -2881,6 +3014,9 @@ Resources:
             - Name: POSTGRES_PASSWORD
               ValueFrom:
                 Ref: SecretPostgresPassword
+            - Name: SENTRY_EMAIL_PASSWORD
+              ValueFrom:
+                Ref: SecretSentryEmailPassword
           Environment:
             - Name: AWS_DEFAULT_REGION
               Value:
@@ -2921,7 +3057,22 @@ Resources:
                 Ref: PostgresDbName
             - Name: POSTGRES_USER
               Value:
-                Ref: PostgresDbUsername 
+                Ref: PostgresDbUsername
+            - Name: SENTRY_EMAIL_BACKEND
+              Value:
+                Ref: SentryEmailBackend
+            - Name: SENTRY_EMAIL_USERNAME
+              Value:
+                Ref: SentryEmailUsername
+            - Name: SENTRY_EMAIL_PORT
+              Value:
+                Ref: SentryEmailPort
+            - Name: SENTRY_EMAIL_HOST
+              Value:
+                Ref: SentryEmailHost
+            - Name: SENTRY_EMAIL_FROM
+              Value:
+                Ref: SentryEmailFrom 
           LogConfiguration:
             LogDriver: awslogs
             Options:
@@ -3065,6 +3216,9 @@ Resources:
             - Name: POSTGRES_PASSWORD
               ValueFrom:
                 Ref: SecretPostgresPassword
+            - Name: SENTRY_EMAIL_PASSWORD
+              ValueFrom:
+                Ref: SecretSentryEmailPassword
           Environment:
             - Name: AWS_DEFAULT_REGION
               Value:
@@ -3106,6 +3260,21 @@ Resources:
             - Name: POSTGRES_USER
               Value:
                 Ref: PostgresDbUsername
+            - Name: SENTRY_EMAIL_BACKEND
+              Value:
+                Ref: SentryEmailBackend
+            - Name: SENTRY_EMAIL_USERNAME
+              Value:
+                Ref: SentryEmailUsername
+            - Name: SENTRY_EMAIL_PORT
+              Value:
+                Ref: SentryEmailPort
+            - Name: SENTRY_EMAIL_HOST
+              Value:
+                Ref: SentryEmailHost
+            - Name: SENTRY_EMAIL_FROM
+              Value:
+                Ref: SentryEmailFrom
           LogConfiguration:
             LogDriver: awslogs
             Options:
@@ -3249,6 +3418,9 @@ Resources:
             - Name: POSTGRES_PASSWORD
               ValueFrom:
                 Ref: SecretPostgresPassword
+            - Name: SENTRY_EMAIL_PASSWORD
+              ValueFrom:
+                Ref: SecretSentryEmailPassword
           Environment:
             - Name: AWS_DEFAULT_REGION
               Value:
@@ -3290,6 +3462,21 @@ Resources:
             - Name: POSTGRES_USER
               Value:
                 Ref: PostgresDbUsername
+            - Name: SENTRY_EMAIL_BACKEND
+              Value:
+                Ref: SentryEmailBackend
+            - Name: SENTRY_EMAIL_USERNAME
+              Value:
+                Ref: SentryEmailUsername
+            - Name: SENTRY_EMAIL_PORT
+              Value:
+                Ref: SentryEmailPort
+            - Name: SENTRY_EMAIL_HOST
+              Value:
+                Ref: SentryEmailHost
+            - Name: SENTRY_EMAIL_FROM
+              Value:
+                Ref: SentryEmailFrom
           LogConfiguration:
             LogDriver: awslogs
             Options:
@@ -3389,6 +3576,9 @@ Resources:
             - Name: POSTGRES_PASSWORD
               ValueFrom:
                 Ref: SecretPostgresPassword
+            - Name: SENTRY_EMAIL_PASSWORD
+              ValueFrom:
+                Ref: SecretSentryEmailPassword
           Environment:
             - Name: AWS_DEFAULT_REGION
               Value:
@@ -3432,6 +3622,21 @@ Resources:
             - Name: POSTGRES_USER
               Value:
                 Ref: PostgresDbUsername
+            - Name: SENTRY_EMAIL_BACKEND
+              Value:
+                Ref: SentryEmailBackend
+            - Name: SENTRY_EMAIL_USERNAME
+              Value:
+                Ref: SentryEmailUsername
+            - Name: SENTRY_EMAIL_PORT
+              Value:
+                Ref: SentryEmailPort
+            - Name: SENTRY_EMAIL_HOST
+              Value:
+                Ref: SentryEmailHost
+            - Name: SENTRY_EMAIL_FROM
+              Value:
+                Ref: SentryEmailFrom
           LogConfiguration:
             LogDriver: awslogs
             Options:
@@ -3531,6 +3736,9 @@ Resources:
             - Name: POSTGRES_PASSWORD
               ValueFrom:
                 Ref: SecretPostgresPassword
+            - Name: SENTRY_EMAIL_PASSWORD
+              ValueFrom:
+                Ref: SecretSentryEmailPassword
           Environment:
             - Name: AWS_DEFAULT_REGION
               Value:
@@ -3574,6 +3782,21 @@ Resources:
             - Name: POSTGRES_USER
               Value:
                 Ref: PostgresDbUsername
+            - Name: SENTRY_EMAIL_BACKEND
+              Value:
+                Ref: SentryEmailBackend
+            - Name: SENTRY_EMAIL_USERNAME
+              Value:
+                Ref: SentryEmailUsername
+            - Name: SENTRY_EMAIL_PORT
+              Value:
+                Ref: SentryEmailPort
+            - Name: SENTRY_EMAIL_HOST
+              Value:
+                Ref: SentryEmailHost
+            - Name: SENTRY_EMAIL_FROM
+              Value:
+                Ref: SentryEmailFrom
           LogConfiguration:
             LogDriver: awslogs
             Options:
@@ -3673,6 +3896,9 @@ Resources:
             - Name: POSTGRES_PASSWORD
               ValueFrom:
                 Ref: SecretPostgresPassword
+            - Name: SENTRY_EMAIL_PASSWORD
+              ValueFrom:
+                Ref: SecretSentryEmailPassword
           Environment:
             - Name: AWS_DEFAULT_REGION
               Value:
@@ -3716,6 +3942,21 @@ Resources:
             - Name: POSTGRES_USER
               Value:
                 Ref: PostgresDbUsername
+            - Name: SENTRY_EMAIL_BACKEND
+              Value:
+                Ref: SentryEmailBackend
+            - Name: SENTRY_EMAIL_USERNAME
+              Value:
+                Ref: SentryEmailUsername
+            - Name: SENTRY_EMAIL_PORT
+              Value:
+                Ref: SentryEmailPort
+            - Name: SENTRY_EMAIL_HOST
+              Value:
+                Ref: SentryEmailHost
+            - Name: SENTRY_EMAIL_FROM
+              Value:
+                Ref: SentryEmailFrom
           LogConfiguration:
             LogDriver: awslogs
             Options:
@@ -3815,6 +4056,9 @@ Resources:
             - Name: POSTGRES_PASSWORD
               ValueFrom:
                 Ref: SecretPostgresPassword
+            - Name: SENTRY_EMAIL_PASSWORD
+              ValueFrom:
+                Ref: SecretSentryEmailPassword
           Environment:
             - Name: AWS_DEFAULT_REGION
               Value:
@@ -3858,6 +4102,21 @@ Resources:
             - Name: POSTGRES_USER
               Value:
                 Ref: PostgresDbUsername
+            - Name: SENTRY_EMAIL_BACKEND
+              Value:
+                Ref: SentryEmailBackend
+            - Name: SENTRY_EMAIL_USERNAME
+              Value:
+                Ref: SentryEmailUsername
+            - Name: SENTRY_EMAIL_PORT
+              Value:
+                Ref: SentryEmailPort
+            - Name: SENTRY_EMAIL_HOST
+              Value:
+                Ref: SentryEmailHost
+            - Name: SENTRY_EMAIL_FROM
+              Value:
+                Ref: SentryEmailFrom
           LogConfiguration:
             LogDriver: awslogs
             Options:
@@ -3958,6 +4217,9 @@ Resources:
             - Name: POSTGRES_PASSWORD
               ValueFrom:
                 Ref: SecretPostgresPassword
+            - Name: SENTRY_EMAIL_PASSWORD
+              ValueFrom:
+                Ref: SecretSentryEmailPassword
           Environment:
             - Name: AWS_DEFAULT_REGION
               Value:
@@ -4001,6 +4263,21 @@ Resources:
             - Name: POSTGRES_USER
               Value:
                 Ref: PostgresDbUsername
+            - Name: SENTRY_EMAIL_BACKEND
+              Value:
+                Ref: SentryEmailBackend
+            - Name: SENTRY_EMAIL_USERNAME
+              Value:
+                Ref: SentryEmailUsername
+            - Name: SENTRY_EMAIL_PORT
+              Value:
+                Ref: SentryEmailPort
+            - Name: SENTRY_EMAIL_HOST
+              Value:
+                Ref: SentryEmailHost
+            - Name: SENTRY_EMAIL_FROM
+              Value:
+                Ref: SentryEmailFrom
           LogConfiguration:
             LogDriver: awslogs
             Options:
@@ -4144,6 +4421,9 @@ Resources:
             - Name: POSTGRES_PASSWORD
               ValueFrom:
                 Ref: SecretPostgresPassword
+            - Name: SENTRY_EMAIL_PASSWORD
+              ValueFrom:
+                Ref: SecretSentryEmailPassword
           Environment:
             - Name: AWS_DEFAULT_REGION
               Value:
@@ -4181,6 +4461,21 @@ Resources:
             - Name: POSTGRES_USER
               Value:
                 Ref: PostgresDbUsername
+            - Name: SENTRY_EMAIL_BACKEND
+              Value:
+                Ref: SentryEmailBackend
+            - Name: SENTRY_EMAIL_USERNAME
+              Value:
+                Ref: SentryEmailUsername
+            - Name: SENTRY_EMAIL_PORT
+              Value:
+                Ref: SentryEmailPort
+            - Name: SENTRY_EMAIL_HOST
+              Value:
+                Ref: SentryEmailHost
+            - Name: SENTRY_EMAIL_FROM
+              Value:
+                Ref: SentryEmailFrom
           LogConfiguration:
             LogDriver: awslogs
             Options:
@@ -4241,6 +4536,9 @@ Resources:
             - Name: POSTGRES_PASSWORD
               ValueFrom:
                 Ref: SecretPostgresPassword
+            - Name: SENTRY_EMAIL_PASSWORD
+              ValueFrom:
+                Ref: SecretSentryEmailPassword
           Environment:
             - Name: AWS_DEFAULT_REGION
               Value:
@@ -4278,6 +4576,21 @@ Resources:
             - Name: POSTGRES_USER
               Value:
                 Ref: PostgresDbUsername
+            - Name: SENTRY_EMAIL_BACKEND
+              Value:
+                Ref: SentryEmailBackend
+            - Name: SENTRY_EMAIL_USERNAME
+              Value:
+                Ref: SentryEmailUsername
+            - Name: SENTRY_EMAIL_PORT
+              Value:
+                Ref: SentryEmailPort
+            - Name: SENTRY_EMAIL_HOST
+              Value:
+                Ref: SentryEmailHost
+            - Name: SENTRY_EMAIL_FROM
+              Value:
+                Ref: SentryEmailFrom
           LogConfiguration:
             LogDriver: awslogs
             Options:
@@ -4458,6 +4771,9 @@ Resources:
             - Name: POSTGRES_PASSWORD
               ValueFrom:
                 Ref: SecretPostgresPassword
+            - Name: SENTRY_EMAIL_PASSWORD
+              ValueFrom:
+                Ref: SecretSentryEmailPassword
           Environment:
             - Name: AWS_DEFAULT_REGION
               Value:
@@ -4495,6 +4811,21 @@ Resources:
             - Name: POSTGRES_USER
               Value:
                 Ref: PostgresDbUsername
+            - Name: SENTRY_EMAIL_BACKEND
+              Value:
+                Ref: SentryEmailBackend
+            - Name: SENTRY_EMAIL_USERNAME
+              Value:
+                Ref: SentryEmailUsername
+            - Name: SENTRY_EMAIL_PORT
+              Value:
+                Ref: SentryEmailPort
+            - Name: SENTRY_EMAIL_HOST
+              Value:
+                Ref: SentryEmailHost
+            - Name: SENTRY_EMAIL_FROM
+              Value:
+                Ref: SentryEmailFrom
           LogConfiguration:
             LogDriver: awslogs
             Options:
@@ -4632,6 +4963,9 @@ Resources:
             - Name: POSTGRES_PASSWORD
               ValueFrom:
                 Ref: SecretPostgresPassword
+            - Name: SENTRY_EMAIL_PASSWORD
+              ValueFrom:
+                Ref: SecretSentryEmailPassword
           Environment:
             - Name: AWS_DEFAULT_REGION
               Value:
@@ -4675,6 +5009,21 @@ Resources:
             - Name: POSTGRES_USER
               Value:
                 Ref: PostgresDbUsername
+            - Name: SENTRY_EMAIL_BACKEND
+              Value:
+                Ref: SentryEmailBackend
+            - Name: SENTRY_EMAIL_USERNAME
+              Value:
+                Ref: SentryEmailUsername
+            - Name: SENTRY_EMAIL_PORT
+              Value:
+                Ref: SentryEmailPort
+            - Name: SENTRY_EMAIL_HOST
+              Value:
+                Ref: SentryEmailHost
+            - Name: SENTRY_EMAIL_FROM
+              Value:
+                Ref: SentryEmailFrom
           LogConfiguration:
             LogDriver: awslogs
             Options:
@@ -4811,6 +5160,9 @@ Resources:
             - Name: POSTGRES_PASSWORD
               ValueFrom:
                 Ref: SecretPostgresPassword
+            - Name: SENTRY_EMAIL_PASSWORD
+              ValueFrom:
+                Ref: SecretSentryEmailPassword
           Environment:
             - Name: AWS_DEFAULT_REGION
               Value:
@@ -4854,6 +5206,21 @@ Resources:
             - Name: POSTGRES_USER
               Value:
                 Ref: PostgresDbUsername
+            - Name: SENTRY_EMAIL_BACKEND
+              Value:
+                Ref: SentryEmailBackend
+            - Name: SENTRY_EMAIL_USERNAME
+              Value:
+                Ref: SentryEmailUsername
+            - Name: SENTRY_EMAIL_PORT
+              Value:
+                Ref: SentryEmailPort
+            - Name: SENTRY_EMAIL_HOST
+              Value:
+                Ref: SentryEmailHost
+            - Name: SENTRY_EMAIL_FROM
+              Value:
+                Ref: SentryEmailFrom
           LogConfiguration:
             LogDriver: awslogs
             Options:
@@ -5038,6 +5405,9 @@ Resources:
             - Name: POSTGRES_PASSWORD
               ValueFrom:
                 Ref: SecretPostgresPassword
+            - Name: SENTRY_EMAIL_PASSWORD
+              ValueFrom:
+                Ref: SecretSentryEmailPassword
           Environment:
             - Name: AWS_DEFAULT_REGION
               Value:
@@ -5075,6 +5445,21 @@ Resources:
             - Name: POSTGRES_USER
               Value:
                 Ref: PostgresDbUsername
+            - Name: SENTRY_EMAIL_BACKEND
+              Value:
+                Ref: SentryEmailBackend
+            - Name: SENTRY_EMAIL_USERNAME
+              Value:
+                Ref: SentryEmailUsername
+            - Name: SENTRY_EMAIL_PORT
+              Value:
+                Ref: SentryEmailPort
+            - Name: SENTRY_EMAIL_HOST
+              Value:
+                Ref: SentryEmailHost
+            - Name: SENTRY_EMAIL_FROM
+              Value:
+                Ref: SentryEmailFrom
           LogConfiguration:
             LogDriver: awslogs
             Options:
