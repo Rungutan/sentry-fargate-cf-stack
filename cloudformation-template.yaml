@@ -347,7 +347,7 @@ Parameters:
     Type: String
     Description: The password of the initial Admin user
     NoEcho: true
-    Defualt: "Sentry123!"
+    Default: "Sentry123!"
 
   # DNS record definitions
   DnsZone:
@@ -1810,6 +1810,7 @@ Resources:
                 - secretsmanager:GetSecretValue
               Resource:
                 - Ref: SecretPostgresPassword
+                - Ref: SecretAdminPassword
 
   TaskRole:
     Type: AWS::IAM::Role
@@ -5029,7 +5030,7 @@ Resources:
           Entrypoint: ["/bin/bash"]
           Command:
             - "-c"
-            - Fn::Sub: "cp /config-sentry/config.yml /etc/sentry/config.yml && (sentry createuser --no-input --superuser --email "${InitialAdminUserEmail}" --password "${!INITIAL_ADMIN_USER_PASSWORD}" || true)"
+            - Fn::Sub: "cp /config-sentry/config.yml /etc/sentry/config.yml && (sentry createuser --no-input --superuser --email \"${InitialAdminUserEmail}\" --password \"${!INITIAL_ADMIN_USER_PASSWORD}\" || true)"
           Secrets:
             - Name: INITIAL_ADMIN_USER_PASSWORD
               ValueFrom:
