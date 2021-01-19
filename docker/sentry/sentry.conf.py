@@ -262,13 +262,14 @@ SENTRY_FEATURES.update(
 #######################
 # Email Configuration #
 #######################
-# SENTRY_OPTIONS['mail.backend'] = os.getenv("SENTRY_EMAIL_BACKEND")
-# SENTRY_OPTIONS['mail.use-tls'] = bool(strtobool(os.getenv("SENTRY_EMAIL_USE_TLS", "true")))
-# SENTRY_OPTIONS['mail.username'] = os.getenv("SENTRY_EMAIL_USERNAME")
-# SENTRY_OPTIONS['mail.password'] = os.getenv("SENTRY_EMAIL_PASSWORD")
-# SENTRY_OPTIONS['mail.port'] = int(os.getenv("SENTRY_EMAIL_PORT"))
-# SENTRY_OPTIONS['mail.host'] = os.getenv("SENTRY_EMAIL_HOST")
-# SENTRY_OPTIONS['mail.from'] = os.getenv("SENTRY_EMAIL_FROM")
+if os.getenv('SENTRY_EMAIL_BACKEND') and os.getenv("SENTRY_EMAIL_USERNAME") and os.getenv("SENTRY_EMAIL_PASSWORD") and os.getenv("SENTRY_EMAIL_HOST"):
+    SENTRY_OPTIONS['mail.backend'] = os.getenv("SENTRY_EMAIL_BACKEND")
+    SENTRY_OPTIONS['mail.use-tls'] = bool(strtobool(os.getenv("SENTRY_EMAIL_USE_TLS", "true")))
+    SENTRY_OPTIONS['mail.username'] = os.getenv("SENTRY_EMAIL_USERNAME")
+    SENTRY_OPTIONS['mail.password'] = os.getenv("SENTRY_EMAIL_PASSWORD")
+    SENTRY_OPTIONS['mail.port'] = int(os.getenv("SENTRY_EMAIL_PORT"))
+    SENTRY_OPTIONS['mail.host'] = os.getenv("SENTRY_EMAIL_HOST")
+    SENTRY_OPTIONS['mail.from'] = os.getenv("SENTRY_EMAIL_FROM")
 
 #########################
 # Bitbucket Integration #
