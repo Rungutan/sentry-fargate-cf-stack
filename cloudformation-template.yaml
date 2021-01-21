@@ -4706,6 +4706,14 @@ Resources:
       ClickHouseImage:
         Ref: ClickHouseImage
 
+  DelayClickHouseBootstrapLambdaResult:
+    Type: Custom::DelayClickHouseBootstrap
+    DependsOn: ClickHouseBoostrapLambdaResult
+    Properties:
+      ServiceToken:
+        Fn::GetAtt: DelayResourceLambdaFunction.Arn
+      TimeToWait: "60"
+
   TaskDefinitionSentryMigration:
     Type: AWS::ECS::TaskDefinition
     Properties:
@@ -4935,10 +4943,20 @@ Resources:
 
   SentryMigrationLambdaResult:
     Type: Custom::SentryMigration
-    DependsOn: ClickHouseBoostrapLambdaResult
+    DependsOn: DelayClickHouseBootstrapLambdaResult
     Properties:
       ServiceToken:
         Fn::GetAtt: SentryMigrationLambdaFunction.Arn
+      SentryImage:
+        Ref: SentryImage
+
+  DelaySentryMigrationLambdaResult:
+    Type: Custom::DelaySentryMigration
+    DependsOn: SentryMigrationLambdaResult
+    Properties:
+      ServiceToken:
+        Fn::GetAtt: DelayResourceLambdaFunction.Arn
+      TimeToWait: "120"
       SentryImage:
         Ref: SentryImage
 
@@ -5133,11 +5151,18 @@ Resources:
 
   SnubaBootstrapLambdaResult:
     Type: Custom::SnubaBootstrap
-    DependsOn: SentryMigrationLambdaResult
+    DependsOn: DelaySentryMigrationLambdaResult
     Properties:
       ServiceToken:
         Fn::GetAtt: SnubaBootstrapLambdaFunction.Arn
 
+  DelaySnubaBootstrapLambdaResult:
+    Type: Custom::DelaySnubaBootstrap
+    DependsOn: SnubaBootstrapLambdaResult
+    Properties:
+      ServiceToken:
+        Fn::GetAtt: DelayResourceLambdaFunction.Arn
+      TimeToWait: "120"
 
   TaskDefinitionSnubaMigrations:
     Type: AWS::ECS::TaskDefinition
@@ -5330,10 +5355,19 @@ Resources:
 
   SnubaMigrationsLambdaResult:
     Type: Custom::SnubaMigrations
-    DependsOn: SnubaBootstrapLambdaResult
+    DependsOn: DelaySnubaBootstrapLambdaResult
     Properties:
       ServiceToken:
         Fn::GetAtt: SnubaMigrationsLambdaFunction.Arn
+      SnubaImage:
+        Ref: SnubaImage
+
+  DelaySnubaMigrationsLambdaResult:
+    Type: Custom::DelaySnubaMigrations
+    DependsOn: SnubaMigrationsLambdaResult
+    Properties:
+      ServiceToken:
+        Fn::GetAtt: DelayResourceLambdaFunction.Arn
       SnubaImage:
         Ref: SnubaImage
 
@@ -5569,7 +5603,64 @@ Resources:
 
   SentryInitialUserLambdaResult:
     Type: Custom::SentryInitialUser
-    DependsOn: SnubaMigrationsLambdaResult
+    DependsOn: DelaySnubaMigrationsLambdaResult
     Properties:
       ServiceToken:
         Fn::GetAtt: SentryInitialUserLambdaFunction.Arn
+
+  DelayResourceLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal: {Service: [lambda.amazonaws.com]}
+          Action: ['sts:AssumeRole']
+      Policies:
+      - PolicyName:
+          Fn::Sub: ${AWS::StackName}-CloudWatch
+        PolicyDocument:
+          Statement:
+          - Effect: Allow
+            Action:
+            - logs:*
+            - cloudwatch:*
+            Resource: '*'
+
+  DelayResourceLambdaFunction:
+    Type: 'AWS::Lambda::Function'
+    Properties:
+      Handler: "index.lambda_handler"
+      Timeout: "900"
+      Role:
+        Fn::GetAtt: SentryInitialUserLambdaRole.Arn
+      Runtime: python3.8
+      Code:
+        ZipFile:
+          Fn::Sub: |
+            import json
+            import cfnresponse
+            import time
+
+            def lambda_handler(event, context):
+              data = {}
+              wait_time = int(event['ResourceProperties']['TimeToWait']) if 'TimeToWait' in event['ResourceProperties'] else 120
+
+              try:
+                if event['RequestType'] in ['Create', 'Update']:
+                  time.sleep(time_to_wait)
+
+                cfnresponse.send(event, context, cfnresponse.SUCCESS, data)
+                
+              except Exception as e:
+                print(str(e))
+                data["Reason"] = str(e)
+                cfnresponse.send(event, context, cfnresponse.FAILED, data)
+
+
+
+
+
+
+
