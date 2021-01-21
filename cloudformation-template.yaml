@@ -1696,11 +1696,11 @@ Resources:
         AliasTarget:
           HostedZoneId: 
             Fn::GetAtt:
-              - LoadBalancer
+              - LoadBalancerProxy
               - CanonicalHostedZoneID
           DNSName: 
             Fn::GetAtt:
-              - LoadBalancer
+              - LoadBalancerProxy
               - DNSName
 
   TargetGroupDefault:
