@@ -5163,7 +5163,7 @@ Resources:
 
               try:
                 if event['RequestType'] in ['Create', 'Update']:
-                  time.sleep(time_to_wait)
+                  time.sleep(wait_time)
 
                 cfnresponse.send(event, context, cfnresponse.SUCCESS, data)
                 
