@@ -2014,6 +2014,15 @@ Resources:
   TargetGroupSnubaApi:
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
     Properties:
+      Name:
+        Fn::Join:
+          - '-'
+          - - 'TG-SnubaApi-'
+            - Fn::Select:
+                - 2
+                - Fn::Split:
+                    - '/'
+                    - Fn::GetAtt: LoadBalancer.LoadBalancerFullName
       HealthCheckIntervalSeconds: 10
       HealthCheckPath: /
       HealthCheckTimeoutSeconds: 5
@@ -2261,6 +2270,15 @@ Resources:
   TargetGroupSentryWeb:
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
     Properties:
+      Name:
+        Fn::Join:
+          - '-'
+          - - 'TG-SentryWeb-'
+            - Fn::Select:
+                - 2
+                - Fn::Split:
+                    - '/'
+                    - Fn::GetAtt: LoadBalancer.LoadBalancerFullName
       HealthCheckIntervalSeconds: 10
       HealthCheckPath: /_health/
       HealthCheckTimeoutSeconds: 5
@@ -2510,6 +2528,15 @@ Resources:
   TargetGroupRelay:
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
     Properties:
+      Name:
+        Fn::Join:
+          - '-'
+          - - 'TG-Ingest-'
+            - Fn::Select:
+                - 2
+                - Fn::Split:
+                    - '/'
+                    - Fn::GetAtt: LoadBalancer.LoadBalancerFullName
       HealthCheckIntervalSeconds: 10
       HealthCheckPath: /api/relay/healthcheck/ready/
       HealthCheckTimeoutSeconds: 5
@@ -2536,7 +2563,7 @@ Resources:
         Values:
           - Fn::Sub: "*.ingest.${SentryDnsRecord}"
       ListenerArn:
-        Ref: ListenerHTTPSProxy
+        Ref: ListenerHTTPProxy
       Priority: 60
 
   HttpsListenerRuleRelay:
@@ -4595,8 +4622,8 @@ Resources:
                 Ref: LogGroup
               awslogs-stream-prefix: ecs
 
-  ClickHouseBoostrapLambdaResult:
-    Type: Custom::ClickHouseBootstrap
+  ClickHouseBoostrapLambdaResultSingleExecution:
+    Type: Custom::ClickHouseBootstrapSingleExecution
     Properties:
       ServiceToken:
         Fn::GetAtt: ContainerSingleExecutionLambdaFunction.Arn
@@ -4606,7 +4633,7 @@ Resources:
 
   DelayClickHouseBootstrapLambdaResult:
     Type: Custom::DelayClickHouseBootstrap
-    DependsOn: ClickHouseBoostrapLambdaResult
+    DependsOn: ClickHouseBoostrapLambdaResultSingleExecution
     Properties:
       ServiceToken:
         Fn::GetAtt: DelayResourceLambdaFunction.Arn
@@ -4741,8 +4768,8 @@ Resources:
                 Ref: LogGroup
               awslogs-stream-prefix: ecs
 
-  SentryMigrationLambdaResult:
-    Type: Custom::SentryMigration
+  SentryMigrationLambdaResultSingleExecution:
+    Type: Custom::SentryMigrationSingleExecution
     DependsOn: DelayClickHouseBootstrapLambdaResult
     Properties:
       ServiceToken:
@@ -4753,7 +4780,7 @@ Resources:
 
   DelaySentryMigrationLambdaResult:
     Type: Custom::DelaySentryMigration
-    DependsOn: SentryMigrationLambdaResult
+    DependsOn: SentryMigrationLambdaResultSingleExecution
     Properties:
       ServiceToken:
         Fn::GetAtt: DelayResourceLambdaFunction.Arn
@@ -4852,8 +4879,8 @@ Resources:
                 Ref: LogGroup
               awslogs-stream-prefix: ecs
 
-  SnubaBootstrapLambdaResult:
-    Type: Custom::SnubaBootstrap
+  SnubaBootstrapLambdaResultSingleExecution:
+    Type: Custom::SnubaBootstrapSingleExecution
     DependsOn: DelaySentryMigrationLambdaResult
     Properties:
       ServiceToken:
@@ -4864,7 +4891,7 @@ Resources:
 
   DelaySnubaBootstrapLambdaResult:
     Type: Custom::DelaySnubaBootstrap
-    DependsOn: SnubaBootstrapLambdaResult
+    DependsOn: SnubaBootstrapLambdaResultSingleExecution
     Properties:
       ServiceToken:
         Fn::GetAtt: DelayResourceLambdaFunction.Arn
@@ -4961,8 +4988,8 @@ Resources:
                 Ref: LogGroup
               awslogs-stream-prefix: ecs
 
-  SnubaMigrationsLambdaResult:
-    Type: Custom::SnubaMigrations
+  SnubaMigrationsLambdaResultSingleExecution:
+    Type: Custom::SnubaMigrationsSingleExecution
     DependsOn: DelaySnubaBootstrapLambdaResult
     Properties:
       ServiceToken:
@@ -4973,7 +5000,7 @@ Resources:
 
   DelaySnubaMigrationsLambdaResult:
     Type: Custom::DelaySnubaMigrations
-    DependsOn: SnubaMigrationsLambdaResult
+    DependsOn: SnubaMigrationsLambdaResultSingleExecution
     Properties:
       ServiceToken:
         Fn::GetAtt: DelayResourceLambdaFunction.Arn
@@ -5112,8 +5139,8 @@ Resources:
                 Ref: LogGroup
               awslogs-stream-prefix: ecs
 
-  SentryInitialUserLambdaResult:
-    Type: Custom::SentryInitialUser
+  SentryInitialUserLambdaResultSingleExecution:
+    Type: Custom::SentryInitialUserSingleExecution
     DependsOn: DelaySnubaMigrationsLambdaResult
     Properties:
       ServiceToken:
