@@ -5148,7 +5148,7 @@ Resources:
       Handler: "index.lambda_handler"
       Timeout: "900"
       Role:
-        Fn::GetAtt: SentryInitialUserLambdaRole.Arn
+        Fn::GetAtt: DelayResourceLambdaRole.Arn
       Runtime: python3.8
       Code:
         ZipFile:
