@@ -5452,15 +5452,18 @@ Resources:
             from botocore.exceptions import ClientError
             import json
             import cfnresponse
+            import traceback            
             from datetime import datetime
 
             def lambda_handler(event, context):
+              print(event)
               data = {}
 
               try:
                 ecs_client = boto3.client('ecs',region_name="${AWS::Region}")
 
-                if event['RequestType'] == 'Create' or (event['RequestType'] == 'Update' and str(event['RequestType']['RerunOnUpdate']).upper() == 'YES'):
+                resourceproperties = event['ResourceProperties']
+                if event['RequestType'] == 'Create' or (event['RequestType'] == 'Update' and (resourceproperties['RerunOnUpdate']) == 'YES'):
                   
                   response = ecs_client.run_task(
                     cluster='${ClusterWorkers}',
@@ -5471,7 +5474,7 @@ Resources:
                             'assignPublicIp': 'DISABLED'
                         }
                     },
-                    taskDefinition=event["ResourceProperties"]["TaskDefinitionArn"]
+                    taskDefinition = resourceproperties["TaskDefinitionArn"]
                   )
                   if "failures" in response and len(response["failures"]) > 0:
                     print(response)
@@ -5483,6 +5486,7 @@ Resources:
                   
                 cfnresponse.send(event, context, cfnresponse.SUCCESS, data)
               except Exception as e:
+                traceback.print_exc() 
                 print(str(e))
                 data["Reason"] = str(e)
                 cfnresponse.send(event, context, cfnresponse.FAILED, data)
