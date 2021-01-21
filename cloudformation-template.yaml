@@ -177,7 +177,7 @@ Parameters:
   # OpsWorks ClickHouse variables
   ClickHouseCookbookUrl:
     Type: String
-    Default: https://github.com/Rungutan/sentry-performance-monitoring/releases/download/1.0.0/clickhouse-1.0.0.tar.gz
+    Default: https://github.com/Rungutan/sentry-performance-monitoring/releases/download/1.2.1/clickhouse-1.2.1.tar.gz
     
   ClickHouseInstanceType:
     Type: String
@@ -205,28 +205,28 @@ Parameters:
 
   SentryImage:
     Type: String
-    Default: public.ecr.aws/x7u7j5v7/sentry-base:latest
-    Description: Public ECR = public.ecr.aws/x7u7j5v7/sentry-base:latest <AND> Docker HUB = rungutancommunity/sentry-base:latest
+    Default: public.ecr.aws/x7u7j5v7/sentry-base:1.2.1
+    Description: Public ECR = public.ecr.aws/x7u7j5v7/sentry-base:1.2.1 <AND> Docker HUB = rungutancommunity/sentry-base:1.2.1
 
   SnubaImage:
     Type: String
-    Default: public.ecr.aws/x7u7j5v7/sentry-snuba:latest
-    Description: Public ECR = public.ecr.aws/x7u7j5v7/sentry-snuba:latest <AND> Docker HUB = rungutancommunity/sentry-snuba:latest
+    Default: public.ecr.aws/x7u7j5v7/sentry-snuba:1.2.1
+    Description: Public ECR = public.ecr.aws/x7u7j5v7/sentry-snuba:1.2.1 <AND> Docker HUB = rungutancommunity/sentry-snuba:1.2.1
 
   RelayImage:
     Type: String
-    Default: public.ecr.aws/x7u7j5v7/sentry-relay:latest
-    Description: Public ECR = public.ecr.aws/x7u7j5v7/sentry-relay:latest <AND> Docker HUB = rungutancommunity/sentry-relay:latest
+    Default: public.ecr.aws/x7u7j5v7/sentry-relay:1.2.1
+    Description: Public ECR = public.ecr.aws/x7u7j5v7/sentry-relay:1.2.1 <AND> Docker HUB = rungutancommunity/sentry-relay:1.2.1
 
   BashImage:
     Type: String
-    Default: public.ecr.aws/x7u7j5v7/bash:latest
-    Description: Public ECR = public.ecr.aws/x7u7j5v7/bash:latest <AND> Docker HUB = rungutancommunity/bash:latest
+    Default: public.ecr.aws/x7u7j5v7/bash:1.2.1
+    Description: Public ECR = public.ecr.aws/x7u7j5v7/bash:1.2.1 <AND> Docker HUB = rungutancommunity/bash:1.2.1
 
   ClickHouseImage:
     Type: String
-    Default: public.ecr.aws/x7u7j5v7/clickhouse-client:latest
-    Description: Public ECR = public.ecr.aws/x7u7j5v7/clickhouse-client:latest <AND> Docker HUB = rungutancommunity/clickhouse-client:latest
+    Default: public.ecr.aws/x7u7j5v7/clickhouse-client:1.2.1
+    Description: Public ECR = public.ecr.aws/x7u7j5v7/clickhouse-client:1.2.1 <AND> Docker HUB = rungutancommunity/clickhouse-client:1.2.1
 
   MinCountSnubaApi:
     Type: String
@@ -390,6 +390,20 @@ Parameters:
   SentryEmailFrom:
     Type: String
 
+  SentryEmailUseTls:
+    Type: String
+    Default: "true"
+    AllowedValues:
+      - "true"
+      - "false"
+
+  SentryEmailUseSsl:
+    Type: String
+    Default: "false"
+    AllowedValues:
+      - "true"
+      - "false"      
+
 Metadata:
   AWS::CloudFormation::Interface:
     ParameterGroups:
@@ -496,6 +510,8 @@ Metadata:
           - SentryEmailPort
           - SentryEmailHost
           - SentryEmailFrom
+          - SentryEmailUseTls
+          - SentryEmailUseSsl
 
 Resources:
 
@@ -2000,6 +2016,12 @@ Resources:
             - Name: SENTRY_EMAIL_FROM
               Value:
                 Ref: SentryEmailFrom
+            - Name: SENTRY_EMAIL_USE_TLS
+              Value:
+                Ref: SentryEmailUseTls
+            - Name: SENTRY_EMAIL_USE_SSL
+              Value:
+                Ref: SentryEmailUseSsl
           LogConfiguration:
             LogDriver: awslogs
             Options:
@@ -2256,6 +2278,12 @@ Resources:
             - Name: SENTRY_EMAIL_FROM
               Value:
                 Ref: SentryEmailFrom
+            - Name: SENTRY_EMAIL_USE_TLS
+              Value:
+                Ref: SentryEmailUseTls
+            - Name: SENTRY_EMAIL_USE_SSL
+              Value:
+                Ref: SentryEmailUseSsl
           LogConfiguration:
             LogDriver: awslogs
             Options:
@@ -2514,6 +2542,12 @@ Resources:
             - Name: SENTRY_EMAIL_FROM
               Value:
                 Ref: SentryEmailFrom
+            - Name: SENTRY_EMAIL_USE_TLS
+              Value:
+                Ref: SentryEmailUseTls
+            - Name: SENTRY_EMAIL_USE_SSL
+              Value:
+                Ref: SentryEmailUseSsl
           LogConfiguration:
             LogDriver: awslogs
             Options:
@@ -2796,7 +2830,13 @@ Resources:
                 Ref: SentryEmailHost
             - Name: SENTRY_EMAIL_FROM
               Value:
-                Ref: SentryEmailFrom 
+                Ref: SentryEmailFrom
+            - Name: SENTRY_EMAIL_USE_TLS
+              Value:
+                Ref: SentryEmailUseTls
+            - Name: SENTRY_EMAIL_USE_SSL
+              Value:
+                Ref: SentryEmailUseSsl 
           LogConfiguration:
             LogDriver: awslogs
             Options:
@@ -2953,6 +2993,12 @@ Resources:
             - Name: SENTRY_EMAIL_FROM
               Value:
                 Ref: SentryEmailFrom
+            - Name: SENTRY_EMAIL_USE_TLS
+              Value:
+                Ref: SentryEmailUseTls
+            - Name: SENTRY_EMAIL_USE_SSL
+              Value:
+                Ref: SentryEmailUseSsl
           LogConfiguration:
             LogDriver: awslogs
             Options:
@@ -3154,7 +3200,13 @@ Resources:
                 Ref: SentryEmailHost
             - Name: SENTRY_EMAIL_FROM
               Value:
-                Ref: SentryEmailFrom 
+                Ref: SentryEmailFrom
+            - Name: SENTRY_EMAIL_USE_TLS
+              Value:
+                Ref: SentryEmailUseTls
+            - Name: SENTRY_EMAIL_USE_SSL
+              Value:
+                Ref: SentryEmailUseSsl 
           LogConfiguration:
             LogDriver: awslogs
             Options:
@@ -3357,6 +3409,12 @@ Resources:
             - Name: SENTRY_EMAIL_FROM
               Value:
                 Ref: SentryEmailFrom
+            - Name: SENTRY_EMAIL_USE_TLS
+              Value:
+                Ref: SentryEmailUseTls
+            - Name: SENTRY_EMAIL_USE_SSL
+              Value:
+                Ref: SentryEmailUseSsl
           LogConfiguration:
             LogDriver: awslogs
             Options:
@@ -3559,6 +3617,12 @@ Resources:
             - Name: SENTRY_EMAIL_FROM
               Value:
                 Ref: SentryEmailFrom
+            - Name: SENTRY_EMAIL_USE_TLS
+              Value:
+                Ref: SentryEmailUseTls
+            - Name: SENTRY_EMAIL_USE_SSL
+              Value:
+                Ref: SentryEmailUseSsl
           LogConfiguration:
             LogDriver: awslogs
             Options:
@@ -3719,6 +3783,12 @@ Resources:
             - Name: SENTRY_EMAIL_FROM
               Value:
                 Ref: SentryEmailFrom
+            - Name: SENTRY_EMAIL_USE_TLS
+              Value:
+                Ref: SentryEmailUseTls
+            - Name: SENTRY_EMAIL_USE_SSL
+              Value:
+                Ref: SentryEmailUseSsl
           LogConfiguration:
             LogDriver: awslogs
             Options:
@@ -3879,6 +3949,12 @@ Resources:
             - Name: SENTRY_EMAIL_FROM
               Value:
                 Ref: SentryEmailFrom
+            - Name: SENTRY_EMAIL_USE_TLS
+              Value:
+                Ref: SentryEmailUseTls
+            - Name: SENTRY_EMAIL_USE_SSL
+              Value:
+                Ref: SentryEmailUseSsl
           LogConfiguration:
             LogDriver: awslogs
             Options:
@@ -4039,6 +4115,12 @@ Resources:
             - Name: SENTRY_EMAIL_FROM
               Value:
                 Ref: SentryEmailFrom
+            - Name: SENTRY_EMAIL_USE_TLS
+              Value:
+                Ref: SentryEmailUseTls
+            - Name: SENTRY_EMAIL_USE_SSL
+              Value:
+                Ref: SentryEmailUseSsl
           LogConfiguration:
             LogDriver: awslogs
             Options:
@@ -4199,6 +4281,12 @@ Resources:
             - Name: SENTRY_EMAIL_FROM
               Value:
                 Ref: SentryEmailFrom
+            - Name: SENTRY_EMAIL_USE_TLS
+              Value:
+                Ref: SentryEmailUseTls
+            - Name: SENTRY_EMAIL_USE_SSL
+              Value:
+                Ref: SentryEmailUseSsl
           LogConfiguration:
             LogDriver: awslogs
             Options:
@@ -4360,6 +4448,12 @@ Resources:
             - Name: SENTRY_EMAIL_FROM
               Value:
                 Ref: SentryEmailFrom
+            - Name: SENTRY_EMAIL_USE_TLS
+              Value:
+                Ref: SentryEmailUseTls
+            - Name: SENTRY_EMAIL_USE_SSL
+              Value:
+                Ref: SentryEmailUseSsl
           LogConfiguration:
             LogDriver: awslogs
             Options:
@@ -4558,6 +4652,12 @@ Resources:
             - Name: SENTRY_EMAIL_FROM
               Value:
                 Ref: SentryEmailFrom
+            - Name: SENTRY_EMAIL_USE_TLS
+              Value:
+                Ref: SentryEmailUseTls
+            - Name: SENTRY_EMAIL_USE_SSL
+              Value:
+                Ref: SentryEmailUseSsl
           LogConfiguration:
             LogDriver: awslogs
             Options:
@@ -4673,6 +4773,12 @@ Resources:
             - Name: SENTRY_EMAIL_FROM
               Value:
                 Ref: SentryEmailFrom
+            - Name: SENTRY_EMAIL_USE_TLS
+              Value:
+                Ref: SentryEmailUseTls
+            - Name: SENTRY_EMAIL_USE_SSL
+              Value:
+                Ref: SentryEmailUseSsl
           LogConfiguration:
             LogDriver: awslogs
             Options:
@@ -4819,6 +4925,12 @@ Resources:
             - Name: SENTRY_EMAIL_FROM
               Value:
                 Ref: SentryEmailFrom
+            - Name: SENTRY_EMAIL_USE_TLS
+              Value:
+                Ref: SentryEmailUseTls
+            - Name: SENTRY_EMAIL_USE_SSL
+              Value:
+                Ref: SentryEmailUseSsl
           LogConfiguration:
             LogDriver: awslogs
             Options:
@@ -4930,6 +5042,12 @@ Resources:
             - Name: SENTRY_EMAIL_FROM
               Value:
                 Ref: SentryEmailFrom
+            - Name: SENTRY_EMAIL_USE_TLS
+              Value:
+                Ref: SentryEmailUseTls
+            - Name: SENTRY_EMAIL_USE_SSL
+              Value:
+                Ref: SentryEmailUseSsl
           LogConfiguration:
             LogDriver: awslogs
             Options:
@@ -5039,6 +5157,12 @@ Resources:
             - Name: SENTRY_EMAIL_FROM
               Value:
                 Ref: SentryEmailFrom
+            - Name: SENTRY_EMAIL_USE_TLS
+              Value:
+                Ref: SentryEmailUseTls
+            - Name: SENTRY_EMAIL_USE_SSL
+              Value:
+                Ref: SentryEmailUseSsl
           LogConfiguration:
             LogDriver: awslogs
             Options:
@@ -5190,6 +5314,12 @@ Resources:
             - Name: SENTRY_EMAIL_FROM
               Value:
                 Ref: SentryEmailFrom
+            - Name: SENTRY_EMAIL_USE_TLS
+              Value:
+                Ref: SentryEmailUseTls
+            - Name: SENTRY_EMAIL_USE_SSL
+              Value:
+                Ref: SentryEmailUseSsl
           LogConfiguration:
             LogDriver: awslogs
             Options:
@@ -5330,7 +5460,7 @@ Resources:
               try:
                 ecs_client = boto3.client('ecs',region_name="${AWS::Region}")
 
-                if event['RequestType'] == 'Create' or (event['RequestType'] == 'Update' and upper(event['RequestType']['RerunOnUpdate']) == 'YES'):
+                if event['RequestType'] == 'Create' or (event['RequestType'] == 'Update' and str(event['RequestType']['RerunOnUpdate']).upper() == 'YES'):
                   
                   response = ecs_client.run_task(
                     cluster='${ClusterWorkers}',

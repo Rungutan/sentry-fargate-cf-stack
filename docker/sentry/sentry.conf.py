@@ -270,6 +270,7 @@ if os.getenv('SENTRY_EMAIL_BACKEND') and os.getenv("SENTRY_EMAIL_USERNAME") and 
     SENTRY_OPTIONS['mail.port'] = int(os.getenv("SENTRY_EMAIL_PORT"))
     SENTRY_OPTIONS['mail.host'] = os.getenv("SENTRY_EMAIL_HOST")
     SENTRY_OPTIONS['mail.from'] = os.getenv("SENTRY_EMAIL_FROM")
+    SENTRY_OPTIONS['mail.use-ssl'] = bool(strtobool(os.getenv("SENTRY_EMAIL_USE_SSL", "false")))
 
 #########################
 # Bitbucket Integration #
