@@ -510,6 +510,8 @@ Metadata:
           - SentryEmailPort
           - SentryEmailHost
           - SentryEmailFrom
+          - SentryEmailUseTls
+          - SentryEmailUseSsl
 
 Resources:
 
