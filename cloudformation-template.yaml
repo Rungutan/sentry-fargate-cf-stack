@@ -5460,7 +5460,7 @@ Resources:
               try:
                 ecs_client = boto3.client('ecs',region_name="${AWS::Region}")
 
-                if event['RequestType'] == 'Create' or (event['RequestType'] == 'Update' and upper(event['RequestType']['RerunOnUpdate']) == 'YES'):
+                if event['RequestType'] == 'Create' or (event['RequestType'] == 'Update' and str(event['RequestType']['RerunOnUpdate']).upper() == 'YES'):
                   
                   response = ecs_client.run_task(
                     cluster='${ClusterWorkers}',
