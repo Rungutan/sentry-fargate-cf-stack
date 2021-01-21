@@ -362,10 +362,6 @@ Parameters:
     Type: String
     Default: snuba-api.mydomain.com
 
-  RelayDnsRecord:
-    Type: String
-    Default: sentry-relay.mydomain.com
-
   # Sentry EMAIL parameters
   SentryEmailBackend:
     Type: String
@@ -475,7 +471,6 @@ Metadata:
           - DnsZone
           - SentryDnsRecord
           - SnubaApiDnsRecord
-          - RelayDnsRecord
 
       - Label:
           default: Sentry initial Admin credentials
@@ -1696,7 +1691,7 @@ Resources:
         Fn::Sub: Route53-record-for-Sentry-Relay
       RecordSets:
       - Name:
-          Ref: RelayDnsRecord
+          Fn::Sub: "*.ingest.${SentryDnsRecord}"
         Type: A
         AliasTarget:
           HostedZoneId: 
@@ -2539,9 +2534,9 @@ Resources:
       Conditions:
       - Field: host-header
         Values:
-          - Ref: RelayDnsRecord
+          - Fn::Sub: "*.ingest.${SentryDnsRecord}"
       ListenerArn:
-        Ref: ListenerHTTPDefault
+        Ref: ListenerHTTPSProxy
       Priority: 60
 
   HttpsListenerRuleRelay:
@@ -2554,9 +2549,9 @@ Resources:
       Conditions:
       - Field: host-header
         Values:
-          - Ref: RelayDnsRecord
+          - Fn::Sub: "*.ingest.${SentryDnsRecord}"
       ListenerArn:
-        Ref: ListenerHTTPSDefault
+        Ref: ListenerHTTPSProxy
       Priority: 70
 
   AutoScalingTargetSentryRelay:
@@ -2589,7 +2584,7 @@ Resources:
         PredefinedMetricSpecification: 
           PredefinedMetricType: ALBRequestCountPerTarget
           ResourceLabel:
-            Fn::Sub: ${LoadBalancer.LoadBalancerFullName}/${TargetGroupRelay.TargetGroupFullName}
+            Fn::Sub: ${LoadBalancerProxy.LoadBalancerFullName}/${TargetGroupRelay.TargetGroupFullName}
 
   TaskDefinitionSentryCron:
     Type: AWS::ECS::TaskDefinition
