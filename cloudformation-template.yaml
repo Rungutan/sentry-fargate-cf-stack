@@ -362,6 +362,10 @@ Parameters:
     Type: String
     Default: snuba-api.mydomain.com
 
+  SentryRelayAlternativeDnsRecord:
+    Type: String
+    Default: sentry-relay.mydomain.com
+
   # Sentry EMAIL parameters
   SentryEmailBackend:
     Type: String
@@ -471,6 +475,7 @@ Metadata:
           - DnsZone
           - SentryDnsRecord
           - SnubaApiDnsRecord
+          - SentryRelayAlternativeDnsRecord
 
       - Label:
           default: Sentry initial Admin credentials
@@ -1703,6 +1708,27 @@ Resources:
               - LoadBalancerProxy
               - DNSName
 
+  Route53RecordRelayAlternative:
+    Type: AWS::Route53::RecordSetGroup
+    Properties:
+      HostedZoneId:
+        Ref: DnsZone
+      Comment: 
+        Fn::Sub: Route53-record-for-Sentry-Relay-Alternative
+      RecordSets:
+      - Name:
+          Ref: SentryRelayAlternativeDnsRecord
+        Type: A
+        AliasTarget:
+          HostedZoneId: 
+            Fn::GetAtt:
+              - LoadBalancerProxy
+              - CanonicalHostedZoneID
+          DNSName: 
+            Fn::GetAtt:
+              - LoadBalancerProxy
+              - DNSName
+
   TargetGroupDefault:
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
     Properties:
@@ -2580,6 +2606,36 @@ Resources:
       ListenerArn:
         Ref: ListenerHTTPSProxy
       Priority: 70
+
+  HttpListenerRuleRelayAlternative:
+    Type: AWS::ElasticLoadBalancingV2::ListenerRule
+    Properties:
+      Actions:
+      - Type: forward
+        TargetGroupArn:
+          Ref: TargetGroupRelay
+      Conditions:
+      - Field: host-header
+        Values:
+          - Ref: SentryRelayAlternativeDnsRecord
+      ListenerArn:
+        Ref: ListenerHTTPProxy
+      Priority: 80
+
+  HttpsListenerRuleRelayAlternative:
+    Type: AWS::ElasticLoadBalancingV2::ListenerRule
+    Properties:
+      Actions:
+      - Type: forward
+        TargetGroupArn:
+          Ref: TargetGroupRelay
+      Conditions:
+      - Field: host-header
+        Values:
+          - Ref: SentryRelayAlternativeDnsRecord
+      ListenerArn:
+        Ref: ListenerHTTPSProxy
+      Priority: 90
 
   AutoScalingTargetSentryRelay:
     Type: AWS::ApplicationAutoScaling::ScalableTarget
