@@ -82,7 +82,7 @@ That's why, for those of you who use **Amazon Web Services** as their preferred 
 Here's how a diagram of the deployed infrastructure looks like:
 
 <p align="center">
-  <img src="https://rungutan.com/img/sentry-rungutan-ecs-infrastructure.png">
+  <img src="https://rungutan.com/img/sentry-rungutan-ecs-infrastructure.png" width="580">
 </p>
 
 
@@ -99,7 +99,7 @@ We take great pride in making sure that our platform is as stable and scalable a
 Here's for example our LIVE web platform loading time stats:
 
 <p align="center">
-  <img src="https://rungutan.com/img/sentry-live-rungutan-stats.png">
+  <img src="https://rungutan.com/img/sentry-live-rungutan-stats.png" width="580">
 </p>
 
 
