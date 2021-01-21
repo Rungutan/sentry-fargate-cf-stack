@@ -1408,7 +1408,7 @@ Resources:
         Ref: PrivateSubnet1
       VpcId:
         Ref: VPC
-      UseOpsworksSecurityGroups: true
+      UseOpsworksSecurityGroups: false
       DefaultOs: Ubuntu 18.04 LTS
       DefaultRootDeviceType: ebs
 
