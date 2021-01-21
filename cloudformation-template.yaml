@@ -413,6 +413,10 @@ Metadata:
           - KafkaInstanceType
           - KafkaVersion
           - KafkaInstanceRootVolumeSize
+
+      - Label:
+          default: Postgres variables
+        Parameters:
           - PostgresDbName
           - PostgresDbUsername
           - PostgresDbPassword
