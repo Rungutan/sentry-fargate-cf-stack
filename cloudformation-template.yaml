@@ -362,7 +362,7 @@ Parameters:
     Type: String
     Default: snuba-api.mydomain.com
 
-  RelayDnsRecord:
+  SentryRelayAlternativeDnsRecord:
     Type: String
     Default: sentry-relay.mydomain.com
 
@@ -413,6 +413,10 @@ Metadata:
           - KafkaInstanceType
           - KafkaVersion
           - KafkaInstanceRootVolumeSize
+
+      - Label:
+          default: Postgres variables
+        Parameters:
           - PostgresDbName
           - PostgresDbUsername
           - PostgresDbPassword
@@ -475,7 +479,7 @@ Metadata:
           - DnsZone
           - SentryDnsRecord
           - SnubaApiDnsRecord
-          - RelayDnsRecord
+          - SentryRelayAlternativeDnsRecord
 
       - Label:
           default: Sentry initial Admin credentials
@@ -1404,7 +1408,7 @@ Resources:
         Ref: PrivateSubnet1
       VpcId:
         Ref: VPC
-      UseOpsworksSecurityGroups: true
+      UseOpsworksSecurityGroups: false
       DefaultOs: Ubuntu 18.04 LTS
       DefaultRootDeviceType: ebs
 
@@ -1696,16 +1700,37 @@ Resources:
         Fn::Sub: Route53-record-for-Sentry-Relay
       RecordSets:
       - Name:
-          Ref: RelayDnsRecord
+          Fn::Sub: "*.ingest.${SentryDnsRecord}"
         Type: A
         AliasTarget:
           HostedZoneId: 
             Fn::GetAtt:
-              - LoadBalancer
+              - LoadBalancerProxy
               - CanonicalHostedZoneID
           DNSName: 
             Fn::GetAtt:
-              - LoadBalancer
+              - LoadBalancerProxy
+              - DNSName
+
+  Route53RecordRelayAlternative:
+    Type: AWS::Route53::RecordSetGroup
+    Properties:
+      HostedZoneId:
+        Ref: DnsZone
+      Comment: 
+        Fn::Sub: Route53-record-for-Sentry-Relay-Alternative
+      RecordSets:
+      - Name:
+          Ref: SentryRelayAlternativeDnsRecord
+        Type: A
+        AliasTarget:
+          HostedZoneId: 
+            Fn::GetAtt:
+              - LoadBalancerProxy
+              - CanonicalHostedZoneID
+          DNSName: 
+            Fn::GetAtt:
+              - LoadBalancerProxy
               - DNSName
 
   TargetGroupDefault:
@@ -2019,6 +2044,15 @@ Resources:
   TargetGroupSnubaApi:
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
     Properties:
+      Name:
+        Fn::Join:
+          - '-'
+          - - 'TG-SnubaApi-'
+            - Fn::Select:
+                - 2
+                - Fn::Split:
+                    - '/'
+                    - Fn::GetAtt: LoadBalancer.LoadBalancerFullName
       HealthCheckIntervalSeconds: 10
       HealthCheckPath: /
       HealthCheckTimeoutSeconds: 5
@@ -2266,6 +2300,15 @@ Resources:
   TargetGroupSentryWeb:
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
     Properties:
+      Name:
+        Fn::Join:
+          - '-'
+          - - 'TG-SentryWeb-'
+            - Fn::Select:
+                - 2
+                - Fn::Split:
+                    - '/'
+                    - Fn::GetAtt: LoadBalancer.LoadBalancerFullName
       HealthCheckIntervalSeconds: 10
       HealthCheckPath: /_health/
       HealthCheckTimeoutSeconds: 5
@@ -2515,6 +2558,15 @@ Resources:
   TargetGroupRelay:
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
     Properties:
+      Name:
+        Fn::Join:
+          - '-'
+          - - 'TG-Ingest-'
+            - Fn::Select:
+                - 2
+                - Fn::Split:
+                    - '/'
+                    - Fn::GetAtt: LoadBalancer.LoadBalancerFullName
       HealthCheckIntervalSeconds: 10
       HealthCheckPath: /api/relay/healthcheck/ready/
       HealthCheckTimeoutSeconds: 5
@@ -2539,9 +2591,9 @@ Resources:
       Conditions:
       - Field: host-header
         Values:
-          - Ref: RelayDnsRecord
+          - Fn::Sub: "*.ingest.${SentryDnsRecord}"
       ListenerArn:
-        Ref: ListenerHTTPDefault
+        Ref: ListenerHTTPProxy
       Priority: 60
 
   HttpsListenerRuleRelay:
@@ -2554,10 +2606,40 @@ Resources:
       Conditions:
       - Field: host-header
         Values:
-          - Ref: RelayDnsRecord
+          - Fn::Sub: "*.ingest.${SentryDnsRecord}"
       ListenerArn:
-        Ref: ListenerHTTPSDefault
+        Ref: ListenerHTTPSProxy
       Priority: 70
+
+  HttpListenerRuleRelayAlternative:
+    Type: AWS::ElasticLoadBalancingV2::ListenerRule
+    Properties:
+      Actions:
+      - Type: forward
+        TargetGroupArn:
+          Ref: TargetGroupRelay
+      Conditions:
+      - Field: host-header
+        Values:
+          - Ref: SentryRelayAlternativeDnsRecord
+      ListenerArn:
+        Ref: ListenerHTTPProxy
+      Priority: 80
+
+  HttpsListenerRuleRelayAlternative:
+    Type: AWS::ElasticLoadBalancingV2::ListenerRule
+    Properties:
+      Actions:
+      - Type: forward
+        TargetGroupArn:
+          Ref: TargetGroupRelay
+      Conditions:
+      - Field: host-header
+        Values:
+          - Ref: SentryRelayAlternativeDnsRecord
+      ListenerArn:
+        Ref: ListenerHTTPSProxy
+      Priority: 90
 
   AutoScalingTargetSentryRelay:
     Type: AWS::ApplicationAutoScaling::ScalableTarget
@@ -2589,7 +2671,7 @@ Resources:
         PredefinedMetricSpecification: 
           PredefinedMetricType: ALBRequestCountPerTarget
           ResourceLabel:
-            Fn::Sub: ${LoadBalancer.LoadBalancerFullName}/${TargetGroupRelay.TargetGroupFullName}
+            Fn::Sub: ${LoadBalancerProxy.LoadBalancerFullName}/${TargetGroupRelay.TargetGroupFullName}
 
   TaskDefinitionSentryCron:
     Type: AWS::ECS::TaskDefinition
@@ -4600,111 +4682,22 @@ Resources:
                 Ref: LogGroup
               awslogs-stream-prefix: ecs
 
-  ClickHouseBootstrapLambdaRole:
-    Type: AWS::IAM::Role
-    Properties:
-      AssumeRolePolicyDocument:
-        Version: '2012-10-17'
-        Statement:
-        - Effect: Allow
-          Principal: {Service: [lambda.amazonaws.com]}
-          Action: ['sts:AssumeRole']
-      Policies:
-      - PolicyName:
-          Fn::Sub: ${AWS::StackName}-Ecs
-        PolicyDocument:
-          Statement:
-          - Effect: Allow
-            Action:
-            - ecs:*
-            Resource: '*'
-      - PolicyName:
-          Fn::Sub: ${AWS::StackName}-CloudWatch
-        PolicyDocument:
-          Statement:
-          - Effect: Allow
-            Action:
-            - logs:*
-            - cloudwatch:*
-            Resource: '*'
-      - PolicyName:
-          Fn::Sub: ${AWS::StackName}-SSM
-        PolicyDocument:
-          Version: '2012-10-17'
-          Statement:
-            - Effect: Allow
-              Action:
-                - secretsmanager:GetSecretValue
-              Resource:
-                - Ref: SecretPostgresPassword
-      - PolicyName:
-          Fn::Sub: ${AWS::StackName}-IAM
-        PolicyDocument:
-          Version: '2012-10-17'
-          Statement:
-            - Effect: Allow
-              Action:
-                - iam:PassRole
-              Resource:
-                - Fn::GetAtt: ExecutionRole.Arn
-                - Fn::GetAtt: TaskRole.Arn
-
-  ClickHouseBootstrapLambdaFunction:
-    Type: AWS::Lambda::Function
-    Properties:
-      Handler: index.lambda_handler
-      Runtime: python3.8
-      Role:
-        Fn::GetAtt: ClickHouseBootstrapLambdaRole.Arn
-      Code:
-        ZipFile:
-          Fn::Sub: |
-            import boto3
-            from botocore.exceptions import ClientError
-            import json
-            import cfnresponse
-            from datetime import datetime
-
-            def lambda_handler(event, context):
-              data = {}
-
-              try:
-                ecs_client = boto3.client('ecs',region_name="${AWS::Region}")
-
-                if event['RequestType'] == 'Create':
-                  
-                  response = ecs_client.run_task(
-                    cluster='${ClusterWorkers}',
-                    networkConfiguration={
-                      'awsvpcConfiguration': {
-                        'subnets': ["${PrivateSubnet1}","${PrivateSubnet2}","${PrivateSubnet3}"],
-                            'securityGroups': [ "${Ec2SecurityGroup}"],
-                            'assignPublicIp': 'DISABLED'
-                        }
-                    },
-                    taskDefinition="${TaskDefinitionClickHouseBootstrap.TaskDefinitionArn}"
-                  )
-                  if "failures" in response and len(response["failures"]) > 0:
-                    print(response)
-                    data["Reason"] = "NOT_OK"
-                    cfnresponse.send(event, context, cfnresponse.FAILED, data)
-
-                else:
-                  data["Reason"] = "OK"
-                  
-                cfnresponse.send(event, context, cfnresponse.SUCCESS, data)
-              except Exception as e:
-                print(str(e))
-                data["Reason"] = str(e)
-                cfnresponse.send(event, context, cfnresponse.FAILED, data)
-
-  ClickHouseBoostrapLambdaResult:
-    Type: Custom::ClickHouseBootstrap
+  ClickHouseBoostrapLambdaResultSingleExecution:
+    Type: Custom::ClickHouseBootstrapSingleExecution
     Properties:
       ServiceToken:
-        Fn::GetAtt: ClickHouseBootstrapLambdaFunction.Arn
-      ClickHouseImage:
-        Ref: ClickHouseImage
+        Fn::GetAtt: ContainerSingleExecutionLambdaFunction.Arn
+      TaskDefinitionArn:
+        Fn::GetAtt: TaskDefinitionClickHouseBootstrap.TaskDefinitionArn
+      RerunOnUpdate: "NO"
+
+  DelayClickHouseBootstrapLambdaResult:
+    Type: Custom::DelayClickHouseBootstrap
+    DependsOn: ClickHouseBoostrapLambdaResultSingleExecution
+    Properties:
+      ServiceToken:
+        Fn::GetAtt: DelayResourceLambdaFunction.Arn
+      TimeToWait: "60"
 
   TaskDefinitionSentryMigration:
     Type: AWS::ECS::TaskDefinition
@@ -4835,110 +4828,23 @@ Resources:
                 Ref: LogGroup
               awslogs-stream-prefix: ecs
 
-  SentryMigrationLambdaRole:
-    Type: AWS::IAM::Role
-    Properties:
-      AssumeRolePolicyDocument:
-        Version: '2012-10-17'
-        Statement:
-        - Effect: Allow
-          Principal: {Service: [lambda.amazonaws.com]}
-          Action: ['sts:AssumeRole']
-      Policies:
-      - PolicyName:
-          Fn::Sub: ${AWS::StackName}-Ecs
-        PolicyDocument:
-          Statement:
-          - Effect: Allow
-            Action:
-            - ecs:*
-            Resource: '*'
-      - PolicyName:
-          Fn::Sub: ${AWS::StackName}-CloudWatch
-        PolicyDocument:
-          Statement:
-          - Effect: Allow
-            Action:
-            - logs:*
-            - cloudwatch:*
-            Resource: '*'
-      - PolicyName:
-          Fn::Sub: ${AWS::StackName}-SSM
-        PolicyDocument:
-          Version: '2012-10-17'
-          Statement:
-            - Effect: Allow
-              Action:
-                - secretsmanager:GetSecretValue
-              Resource:
-                - Ref: SecretPostgresPassword
-      - PolicyName:
-          Fn::Sub: ${AWS::StackName}-IAM
-        PolicyDocument:
-          Version: '2012-10-17'
-          Statement:
-            - Effect: Allow
-              Action:
-                - iam:PassRole
-              Resource:
-                - Fn::GetAtt: ExecutionRole.Arn
-                - Fn::GetAtt: TaskRole.Arn
-
-  SentryMigrationLambdaFunction:
-    Type: AWS::Lambda::Function
-    Properties:
-      Handler: index.lambda_handler
-      Runtime: python3.8
-      Role:
-        Fn::GetAtt: SentryMigrationLambdaRole.Arn
-      Code:
-        ZipFile:
-          Fn::Sub: |
-            import boto3
-            from botocore.exceptions import ClientError
-            import json
-            import cfnresponse
-            from datetime import datetime
-
-            def lambda_handler(event, context):
-              data = {}
-
-              try:
-                ecs_client = boto3.client('ecs',region_name="${AWS::Region}")
-
-                if event['RequestType'] == 'Create':
-                  
-                  response = ecs_client.run_task(
-                    cluster='${ClusterWorkers}',
-                    networkConfiguration={
-                      'awsvpcConfiguration': {
-                        'subnets': ["${PrivateSubnet1}","${PrivateSubnet2}","${PrivateSubnet3}"],
-                            'securityGroups': [ "${Ec2SecurityGroup}"],
-                            'assignPublicIp': 'DISABLED'
-                        }
-                    },
-                    taskDefinition="${TaskDefinitionSentryMigration.TaskDefinitionArn}"
-                  )
-                  if "failures" in response and len(response["failures"]) > 0:
-                    print(response)
-                    data["Reason"] = "NOT_OK"
-                    cfnresponse.send(event, context, cfnresponse.FAILED, data)
-
-                else:
-                  data["Reason"] = "OK"
-                  
-                cfnresponse.send(event, context, cfnresponse.SUCCESS, data)
-              except Exception as e:
-                print(str(e))
-                data["Reason"] = str(e)
-                cfnresponse.send(event, context, cfnresponse.FAILED, data)
-
-  SentryMigrationLambdaResult:
-    Type: Custom::SentryMigration
-    DependsOn: ClickHouseBoostrapLambdaResult
+  SentryMigrationLambdaResultSingleExecution:
+    Type: Custom::SentryMigrationSingleExecution
+    DependsOn: DelayClickHouseBootstrapLambdaResult
     Properties:
       ServiceToken:
-        Fn::GetAtt: SentryMigrationLambdaFunction.Arn
+        Fn::GetAtt: ContainerSingleExecutionLambdaFunction.Arn
+      TaskDefinitionArn:
+        Fn::GetAtt: TaskDefinitionSentryMigration.TaskDefinitionArn
+      RerunOnUpdate: "YES"
+
+  DelaySentryMigrationLambdaResult:
+    Type: Custom::DelaySentryMigration
+    DependsOn: SentryMigrationLambdaResultSingleExecution
+    Properties:
+      ServiceToken:
+        Fn::GetAtt: DelayResourceLambdaFunction.Arn
+      TimeToWait: "120"
       SentryImage:
         Ref: SentryImage
 
@@ -5033,111 +4939,23 @@ Resources:
                 Ref: LogGroup
               awslogs-stream-prefix: ecs
 
-  SnubaBootstrapLambdaRole:
-    Type: AWS::IAM::Role
-    Properties:
-      AssumeRolePolicyDocument:
-        Version: '2012-10-17'
-        Statement:
-        - Effect: Allow
-          Principal: {Service: [lambda.amazonaws.com]}
-          Action: ['sts:AssumeRole']
-      Policies:
-      - PolicyName:
-          Fn::Sub: ${AWS::StackName}-Ecs
-        PolicyDocument:
-          Statement:
-          - Effect: Allow
-            Action:
-            - ecs:*
-            Resource: '*'
-      - PolicyName:
-          Fn::Sub: ${AWS::StackName}-CloudWatch
-        PolicyDocument:
-          Statement:
-          - Effect: Allow
-            Action:
-            - logs:*
-            - cloudwatch:*
-            Resource: '*'
-      - PolicyName:
-          Fn::Sub: ${AWS::StackName}-SSM
-        PolicyDocument:
-          Version: '2012-10-17'
-          Statement:
-            - Effect: Allow
-              Action:
-                - secretsmanager:GetSecretValue
-              Resource:
-                - Ref: SecretPostgresPassword
-      - PolicyName:
-          Fn::Sub: ${AWS::StackName}-IAM
-        PolicyDocument:
-          Version: '2012-10-17'
-          Statement:
-            - Effect: Allow
-              Action:
-                - iam:PassRole
-              Resource:
-                - Fn::GetAtt: ExecutionRole.Arn
-                - Fn::GetAtt: TaskRole.Arn
-
-  SnubaBootstrapLambdaFunction:
-    Type: AWS::Lambda::Function
-    Properties:
-      Handler: index.lambda_handler
-      Runtime: python3.8
-      Role:
-        Fn::GetAtt: SnubaBootstrapLambdaRole.Arn
-      Code:
-        ZipFile:
-          Fn::Sub: |
-            import boto3
-            from botocore.exceptions import ClientError
-            import json
-            import cfnresponse
-            from datetime import datetime
-
-            def lambda_handler(event, context):
-              data = {}
-
-              try:
-                ecs_client = boto3.client('ecs',region_name="${AWS::Region}")
-
-                if event['RequestType'] == 'Create':
-                  
-                  response = ecs_client.run_task(
-                    cluster='${ClusterWorkers}',
-                    networkConfiguration={
-                      'awsvpcConfiguration': {
-                        'subnets': ["${PrivateSubnet1}","${PrivateSubnet2}","${PrivateSubnet3}"],
-                            'securityGroups': [ "${Ec2SecurityGroup}"],
-                            'assignPublicIp': 'DISABLED'
-                        }
-                    },
-                    taskDefinition="${TaskDefinitionSnubaBootstrap.TaskDefinitionArn}"
-                  )
-                  if "failures" in response and len(response["failures"]) > 0:
-                    print(response)
-                    data["Reason"] = "NOT_OK"
-                    cfnresponse.send(event, context, cfnresponse.FAILED, data)
-
-                else:
-                  data["Reason"] = "OK"
-                  
-                cfnresponse.send(event, context, cfnresponse.SUCCESS, data)
-              except Exception as e:
-                print(str(e))
-                data["Reason"] = str(e)
-                cfnresponse.send(event, context, cfnresponse.FAILED, data)
-
-  SnubaBootstrapLambdaResult:
-    Type: Custom::SnubaBootstrap
-    DependsOn: SentryMigrationLambdaResult
+  SnubaBootstrapLambdaResultSingleExecution:
+    Type: Custom::SnubaBootstrapSingleExecution
+    DependsOn: DelaySentryMigrationLambdaResult
     Properties:
       ServiceToken:
-        Fn::GetAtt: SnubaBootstrapLambdaFunction.Arn
+        Fn::GetAtt: ContainerSingleExecutionLambdaFunction.Arn
+      TaskDefinitionArn:
+        Fn::GetAtt: TaskDefinitionSnubaBootstrap.TaskDefinitionArn
+      RerunOnUpdate: "NO"
 
+  DelaySnubaBootstrapLambdaResult:
+    Type: Custom::DelaySnubaBootstrap
+    DependsOn: SnubaBootstrapLambdaResultSingleExecution
+    Properties:
+      ServiceToken:
+        Fn::GetAtt: DelayResourceLambdaFunction.Arn
+      TimeToWait: "120"
 
   TaskDefinitionSnubaMigrations:
     Type: AWS::ECS::TaskDefinition
@@ -5230,110 +5048,22 @@ Resources:
                 Ref: LogGroup
               awslogs-stream-prefix: ecs
 
-  SnubaMigrationsLambdaRole:
-    Type: AWS::IAM::Role
-    Properties:
-      AssumeRolePolicyDocument:
-        Version: '2012-10-17'
-        Statement:
-        - Effect: Allow
-          Principal: {Service: [lambda.amazonaws.com]}
-          Action: ['sts:AssumeRole']
-      Policies:
-      - PolicyName:
-          Fn::Sub: ${AWS::StackName}-Ecs
-        PolicyDocument:
-          Statement:
-          - Effect: Allow
-            Action:
-            - ecs:*
-            Resource: '*'
-      - PolicyName:
-          Fn::Sub: ${AWS::StackName}-CloudWatch
-        PolicyDocument:
-          Statement:
-          - Effect: Allow
-            Action:
-            - logs:*
-            - cloudwatch:*
-            Resource: '*'
-      - PolicyName:
-          Fn::Sub: ${AWS::StackName}-SSM
-        PolicyDocument:
-          Version: '2012-10-17'
-          Statement:
-            - Effect: Allow
-              Action:
-                - secretsmanager:GetSecretValue
-              Resource:
-                - Ref: SecretPostgresPassword
-      - PolicyName:
-          Fn::Sub: ${AWS::StackName}-IAM
-        PolicyDocument:
-          Version: '2012-10-17'
-          Statement:
-            - Effect: Allow
-              Action:
-                - iam:PassRole
-              Resource:
-                - Fn::GetAtt: ExecutionRole.Arn
-                - Fn::GetAtt: TaskRole.Arn
-
-  SnubaMigrationsLambdaFunction:
-    Type: AWS::Lambda::Function
-    Properties:
-      Handler: index.lambda_handler
-      Runtime: python3.8
-      Role:
-        Fn::GetAtt: SnubaMigrationsLambdaRole.Arn
-      Code:
-        ZipFile:
-          Fn::Sub: |
-            import boto3
-            from botocore.exceptions import ClientError
-            import json
-            import cfnresponse
-            from datetime import datetime
-
-            def lambda_handler(event, context):
-              data = {}
-
-              try:
-                ecs_client = boto3.client('ecs',region_name="${AWS::Region}")
-
-                if event['RequestType'] == 'Create':
-                  
-                  response = ecs_client.run_task(
-                    cluster='${ClusterWorkers}',
-                    networkConfiguration={
-                      'awsvpcConfiguration': {
-                        'subnets': ["${PrivateSubnet1}","${PrivateSubnet2}","${PrivateSubnet3}"],
-                            'securityGroups': [ "${Ec2SecurityGroup}"],
-                            'assignPublicIp': 'DISABLED'
-                        }
-                    },
-                    taskDefinition="${TaskDefinitionSnubaMigrations.TaskDefinitionArn}"
-                  )
-                  if "failures" in response and len(response["failures"]) > 0:
-                    print(response)
-                    data["Reason"] = "NOT_OK"
-                    cfnresponse.send(event, context, cfnresponse.FAILED, data)
-
-                else:
-                  data["Reason"] = "OK"
-                  
-                cfnresponse.send(event, context, cfnresponse.SUCCESS, data)
-              except Exception as e:
-                print(str(e))
-                data["Reason"] = str(e)
-                cfnresponse.send(event, context, cfnresponse.FAILED, data)
-
-  SnubaMigrationsLambdaResult:
-    Type: Custom::SnubaMigrations
-    DependsOn: SnubaBootstrapLambdaResult
+  SnubaMigrationsLambdaResultSingleExecution:
+    Type: Custom::SnubaMigrationsSingleExecution
+    DependsOn: DelaySnubaBootstrapLambdaResult
     Properties:
       ServiceToken:
-        Fn::GetAtt: SnubaMigrationsLambdaFunction.Arn
+        Fn::GetAtt: ContainerSingleExecutionLambdaFunction.Arn
+      TaskDefinitionArn:
+        Fn::GetAtt: TaskDefinitionSnubaMigrations.TaskDefinitionArn
+      RerunOnUpdate: "YES"
+
+  DelaySnubaMigrationsLambdaResult:
+    Type: Custom::DelaySnubaMigrations
+    DependsOn: SnubaMigrationsLambdaResultSingleExecution
+    Properties:
+      ServiceToken:
+        Fn::GetAtt: DelayResourceLambdaFunction.Arn
       SnubaImage:
         Ref: SnubaImage
 
@@ -5469,7 +5199,67 @@ Resources:
                 Ref: LogGroup
               awslogs-stream-prefix: ecs
 
-  SentryInitialUserLambdaRole:
+  SentryInitialUserLambdaResultSingleExecution:
+    Type: Custom::SentryInitialUserSingleExecution
+    DependsOn: DelaySnubaMigrationsLambdaResult
+    Properties:
+      ServiceToken:
+        Fn::GetAtt: ContainerSingleExecutionLambdaFunction.Arn
+      TaskDefinitionArn:
+        Fn::GetAtt: TaskDefinitionSentryInitialUser.TaskDefinitionArn
+      RerunOnUpdate: "NO"
+
+  DelayResourceLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal: {Service: [lambda.amazonaws.com]}
+          Action: ['sts:AssumeRole']
+      Policies:
+      - PolicyName:
+          Fn::Sub: ${AWS::StackName}-CloudWatch
+        PolicyDocument:
+          Statement:
+          - Effect: Allow
+            Action:
+            - logs:*
+            - cloudwatch:*
+            Resource: '*'
+
+  DelayResourceLambdaFunction:
+    Type: 'AWS::Lambda::Function'
+    Properties:
+      Handler: "index.lambda_handler"
+      Timeout: "900"
+      Role:
+        Fn::GetAtt: DelayResourceLambdaRole.Arn
+      Runtime: python3.8
+      Code:
+        ZipFile:
+          Fn::Sub: |
+            import json
+            import cfnresponse
+            import time
+
+            def lambda_handler(event, context):
+              data = {}
+              wait_time = int(event['ResourceProperties']['TimeToWait']) if 'TimeToWait' in event['ResourceProperties'] else 120
+
+              try:
+                if event['RequestType'] in ['Create', 'Update']:
+                  time.sleep(wait_time)
+
+                cfnresponse.send(event, context, cfnresponse.SUCCESS, data)
+                
+              except Exception as e:
+                print(str(e))
+                data["Reason"] = str(e)
+                cfnresponse.send(event, context, cfnresponse.FAILED, data)
+
+  ContainerSingleExecutionLambdaRole:
     Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
@@ -5518,13 +5308,13 @@ Resources:
                 - Fn::GetAtt: ExecutionRole.Arn
                 - Fn::GetAtt: TaskRole.Arn
 
-  SentryInitialUserLambdaFunction:
+  ContainerSingleExecutionLambdaFunction:
     Type: AWS::Lambda::Function
     Properties:
       Handler: index.lambda_handler
       Runtime: python3.8
       Role:
-        Fn::GetAtt: SentryInitialUserLambdaRole.Arn
+        Fn::GetAtt: ContainerSingleExecutionLambdaRole.Arn
       Code:
         ZipFile:
           Fn::Sub: |
@@ -5540,7 +5330,7 @@ Resources:
               try:
                 ecs_client = boto3.client('ecs',region_name="${AWS::Region}")
 
-                if event['RequestType'] == 'Create':
+                if event['RequestType'] == 'Create' or (event['RequestType'] == 'Update' and upper(event['RequestType']['RerunOnUpdate']) == 'YES'):
                   
                   response = ecs_client.run_task(
                     cluster='${ClusterWorkers}',
@@ -5551,7 +5341,7 @@ Resources:
                             'assignPublicIp': 'DISABLED'
                         }
                     },
-                    taskDefinition="${TaskDefinitionSentryInitialUser.TaskDefinitionArn}"
+                    taskDefinition=event["ResourceProperties"]["TaskDefinitionArn"]
                   )
                   if "failures" in response and len(response["failures"]) > 0:
                     print(response)
@@ -5567,9 +5357,9 @@ Resources:
                 data["Reason"] = str(e)
                 cfnresponse.send(event, context, cfnresponse.FAILED, data)
 
-  SentryInitialUserLambdaResult:
-    Type: Custom::SentryInitialUser
-    DependsOn: SnubaMigrationsLambdaResult
-    Properties:
-      ServiceToken:
-        Fn::GetAtt: SentryInitialUserLambdaFunction.Arn
+
+
+
+
+
+

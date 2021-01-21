@@ -103,6 +103,33 @@ Here's for example our LIVE web platform loading time stats:
 </p>
 
 
+## Important note about stack
+
+The Client DSN record that is created by Sentry each and every time you create a new project looks something like this:
+
+```
+https://some_random_public_key_string_here@o1.ingest.${the_sentry_dns_record}/2
+```
+
+So if the parameter value of `SentryDnsRecord` is `sentry.rungutan.com` then the DSN would be:
+
+```
+https://some_random_public_key_string_here@o1.ingest.sentry.rungutan.com/2
+```
+
+Why is this important?
+
+**Because you need to make sure that your SSL certificate can handle that specific ingest domain as well**
+
+The workaround for this (if it's not possible to use the default ingest record) is to relay on the parameter value that you set up for `SentryRelayAlternativeDnsRecord`.
+
+This means that if for example the value for SentryRelayAlternativeDnsRecord is `sentry-relay.rungutan.com`, then you would instead use this specific DSN:
+
+```
+https://some_random_public_key_string_here@sentry-relay.rungutan.com/2
+```
+
+
 ## Final thoughts
 
 Performance Testing and Performance Monitoring ho hand in hand and none of them must be missing from the toolchain of any good DevOps, Developer or QA.
