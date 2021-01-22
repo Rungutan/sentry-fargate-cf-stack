@@ -5547,7 +5547,7 @@ Resources:
                     data["Reason"] = "NOT_OK"
                     cfnresponse.send(event, context, cfnresponse.FAILED, data)
 
-                elif event['RequestType'] == 'Update' and event['RequestType']['RerunOnUpdate'] == 'YES':
+                elif event['RequestType'] == 'Update' and event['ResourceProperties']['RerunOnUpdate'] == 'YES':
 
                   response = ecs_client.run_task(
                       cluster='${ClusterWorkers}',
