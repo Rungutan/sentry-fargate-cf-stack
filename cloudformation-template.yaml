@@ -407,15 +407,17 @@ Parameters:
   # Sentry SLACK integration
   SentrySlackClientId:
     Type: String
-    Default: "182824420244.1408093862838"
+    Default: "not-defined"
 
   SentrySlackClientSecret:
     Type: String
     NoEcho: true
+    Default: "not-defined"
 
   SentrySlackSigningSecret:
     Type: String
     NoEcho: true
+    Default: "not-defined"
       
 
 Metadata:

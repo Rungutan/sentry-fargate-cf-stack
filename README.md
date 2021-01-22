@@ -35,6 +35,79 @@ With performance monitoring, you can view transactions by slowest duration time,
   <img src="https://www.sentry.dev/_assets2/static/performance-waterfall-4cf0f3924387628fb6f537dc050f9871.png" width="290">
 </p>
 
+## Integrations
+
+### Rungutan
+
+As part of the CI/CD pipeline definition mentioned in [// Article - How to include Load Testing in your CI / CD pipeline?](https://rungutan.com/blog/ci-cd-pipeline-workflow/), you would simple have to create METRIC ALERTS for monitoring in Sentry and include the load test into your pipeline:
+
+<p align="center">
+  <img src="https://sentry-performance-monitoring.s3.amazonaws.com/sentry-metric-alerts.png" width="580">
+ </p>
+
+For reference, a sample **GitHub Actions** pipeline for Rungutan looks like this:
+
+```
+name: Load test with Rungutan
+
+on:
+  release:
+    types:
+      - created
+
+jobs:
+  load:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Load test your platform with Rungutan
+      uses: Rungutan/rungutan-actions@1.0.0
+      env:
+        RUNGUTAN_TEAM_ID: ${{ secrets.RUNGUTAN_TEAM_ID }}
+        RUNGUTAN_API_KEY: ${{ secrets.RUNGUTAN_API_KEY }}
+        RUNGUTAN_TEST_FILE: test_file.json
+        RUNGUTAN_TEST_NAME: ${{ github.repository }}-${{ github.ref }}
+```
+
+### Slack
+
+The **Slack** integration helps you set up a channel to receive alerts in your Slack organization and have your team members react on them by assigning it to specific people or resolving it in the current or next release.
+
+The steps to set up the Slack integration are a bit complicated on the Slack side in order to get all the features you need, but not impossible!
+
+In order to do it, you'd have to:
+
+1. Go to https://api.slack.com/apps and click on **Create New App**, give it a name (eg "Sentry") and select your current workspace
+
+2. Go to **OAuth & Permissions**, and set the following, click on **Add New Redirect URL** and set it as https://${SentryDnsRecord}/extensions/slack/setup/
+
+3. While still on **OAuth & Permissions**, enable the following under **Bot Token Scopes**:
+  - incoming-webhook
+  - links:read
+  - links:write
+
+4. While still on **OAuth & Permissions**, enable the following under **User Token Scopes**:
+  - links:read
+  - links:write
+
+5. Go to the **Interactivity & Shortcuts** section, enable it and set the following:
+  - **Request URL** = https://${SentryDnsRecord}/extensions/slack/action/
+  - **Options Load URL** = https://${SentryDnsRecord}/extensions/slack/options-load/
+
+6. Go to **Event Subscriptions**, enable it and set the **Request URL** as https://${SentryDnsRecord}/extensions/slack/event/
+
+7. While still on **Event Subscriptions**, click on "Add Bot User Event" (within the "Subscribe to bot events" section) and include **link_shared** (if not already there)
+
+8. While still on **Event Subscriptions**, click on "Add Domain" (within the "App unfurl domains" section) and include your Sentry DNS record in it
+
+9. After all this is done, go back to **Basic Information**, click on **Install App** and write down the following resulting information that will be reused in your CloudFormation template:
+  - **Client ID**
+  - **Client Secret**
+  - **Signing Secret**
+
 
 ## How do Sentry and Rungutan work together?
 
