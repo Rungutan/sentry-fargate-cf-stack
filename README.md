@@ -109,6 +109,17 @@ In order to do it, you'd have to:
   - **Signing Secret**
 
 
+
+After you've finished the Slack definition of your application, then access Sentry and:
+  - Go to **Settings**
+  - Click on **Integrations**
+  - Click on **Slack**
+  - Click on **Add WOrkspace**
+  - Click on Allow
+
+PS: In order to "benefit" fully from this Slack integration, you'll havet to perform these steps with an account that has the **ADMIN** privileges in Slack!
+
+
 ## How do Sentry and Rungutan work together?
 
 Rungutan and Sentry are two pieces of the same puzzle: capturing and observing user activity on your platform.
