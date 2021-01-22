@@ -1,2 +1,2 @@
-FROM getsentry/snuba:20.12.1
+FROM getsentry/snuba:21.1.0
 
