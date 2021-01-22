@@ -74,7 +74,7 @@ Here's how a diagram of the deployed infrastructure looks like:
 You can deploy it by following these simple steps:
 
 1. Create the stack in CloudFormation using this link -> https://console.aws.amazon.com/cloudformation/home#/stacks/create/review?templateURL=https://s3.us-east-1.amazonaws.com/sentry-performance-monitoring/cloudformation-template.yaml&stackName=Sentry-Rungutan-ECS
-2. Fill in the **AT LEAST** these parameters and hit "Create stack":
+2. Fill in **AT LEAST** these parameters and hit "Create stack":
   - SentrySystemSecretKey -> You can use a random UUIDv4 that you can get from https://www.uuidgenerator.net/
   - InitialAdminUserEmail -> A **very strong** password that you should set for the initial admin user
   - InitialAdminUserPassword
