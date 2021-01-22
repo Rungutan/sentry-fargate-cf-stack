@@ -35,6 +35,57 @@ With performance monitoring, you can view transactions by slowest duration time,
   <img src="https://www.sentry.dev/_assets2/static/performance-waterfall-4cf0f3924387628fb6f537dc050f9871.png" width="290">
 </p>
 
+## How do I deploy it?
+
+Let me make it clear before we go any further -> **Sentry** prides itself for being [open-source](https://sentry.io/_/open-source/) but it does offer a cloud-based solution as a [SaaS](https://sentry.io/welcome/) for those who do not want to deploy, manage and maintain the infrastructure for it.
+
+There are a few community contributed ways of deploying it on premise if you do decide to not for the cloud version:
+
+* One of the ways is use with **docker-compose** mentioned in one of Sentry's official GitHub repositories - [getsentry/onpremise](https://github.com/getsentry/onpremise)
+* Another way is a community built **HELM** package available in this repo - [sentry-kubernetes/charts](https://github.com/sentry-kubernetes/charts)
+
+
+Both of these solutions though have some downsides, specifically:
+
+* Scaling ingestion of events is a bit hard due to the hard capacity limits of both solutions
+* It is a well known fact that database systems perform better on NON-docker infrastructure points
+* Keeping up with the different changes in versions is usually a hassle
+* Customizing the different bits and pieces such as integrations require a lot of man hours
+
+
+That's why, for those of you who use **Amazon Web Services** as their preferred cloud provider, we came in your help with **a fully scalable, easy to maintain and secure infrastructure** based on the following AWS services:
+
+* AWS ECS Fargate
+* AWS RDS
+* AWS ElastiCache
+* AWS MSK (Kafka)
+* AWS OpsWorks
+* AWS VPC
+* AWS CloudWatch
+
+
+Here's how a diagram of the deployed infrastructure looks like:
+
+<p align="center">
+  <img src="https://rungutan.com/img/sentry-rungutan-ecs-infrastructure.png" width="580">
+</p>
+
+
+You can deploy it by following these simple steps:
+
+1. Create the stack in CloudFormation using this link -> https://console.aws.amazon.com/cloudformation/home#/stacks/create/review?templateURL=https://s3.us-east-1.amazonaws.com/sentry-performance-monitoring/cloudformation-template.yaml&stackName=Sentry-Rungutan-ECS
+2. Fill in the **AT LEAST** these parameters and hit "Create stack":
+  - SentrySystemSecretKey -> You can use a random UUIDv4 that you can get from https://www.uuidgenerator.net/
+  - InitialAdminUserEmail -> A **very strong** password that you should set for the initial admin user
+  - InitialAdminUserPassword
+  - SslLoadBalancer -> Sentry **cannot** properly work without HTTPS and it is a requirement for this stack
+  - SentryEmailUsername -> We recommend SES for that and you can create a user/pass from https://console.aws.amazon.com/ses/home#smtp-settings:
+  - SentryEmailPassword -> We recommend SES for that and you can create a user/pass from https://console.aws.amazon.com/ses/home#smtp-settings:
+  - SentryEmailHost -> As mentioned in the description, the SES endpoint is **email-smtp.${aws_region}.amazonaws.com**
+  - SentryEmailFrom -> If using SES, a confirmed address (or domain) from https://console.aws.amazon.com/ses/home#verified-senders-email:
+
+PS: It is recommended that you create your own administrators and delete the initial one after the initial deployment is done!
+
 ## Integrations
 
 ### Rungutan
@@ -133,57 +184,6 @@ Let's be honest. These platforms are our babies. They're one of the best things 
 That is exactly why load testing, monitoring and alerting after every release is of vital importance!.
 
 In short -> Rungutan simulates high user activity and Sentry tells you the exact piece of code causing problems at scale.
-
-## How do I deploy it?
-
-Let me make it clear before we go any further -> **Sentry** prides itself for being [open-source](https://sentry.io/_/open-source/) but it does offer a cloud-based solution as a [SaaS](https://sentry.io/welcome/) for those who do not want to deploy, manage and maintain the infrastructure for it.
-
-There are a few community contributed ways of deploying it on premise if you do decide to not for the cloud version:
-
-* One of the ways is use with **docker-compose** mentioned in one of Sentry's official GitHub repositories - [getsentry/onpremise](https://github.com/getsentry/onpremise)
-* Another way is a community built **HELM** package available in this repo - [sentry-kubernetes/charts](https://github.com/sentry-kubernetes/charts)
-
-
-Both of these solutions though have some downsides, specifically:
-
-* Scaling ingestion of events is a bit hard due to the hard capacity limits of both solutions
-* It is a well known fact that database systems perform better on NON-docker infrastructure points
-* Keeping up with the different changes in versions is usually a hassle
-* Customizing the different bits and pieces such as integrations require a lot of man hours
-
-
-That's why, for those of you who use **Amazon Web Services** as their preferred cloud provider, we came in your help with **a fully scalable, easy to maintain and secure infrastructure** based on the following AWS services:
-
-* AWS ECS Fargate
-* AWS RDS
-* AWS ElastiCache
-* AWS MSK (Kafka)
-* AWS OpsWorks
-* AWS VPC
-* AWS CloudWatch
-
-
-Here's how a diagram of the deployed infrastructure looks like:
-
-<p align="center">
-  <img src="https://rungutan.com/img/sentry-rungutan-ecs-infrastructure.png" width="580">
-</p>
-
-
-You can deploy it by following these simple steps:
-
-1. Create the stack in CloudFormation using this link -> https://console.aws.amazon.com/cloudformation/home#/stacks/create/review?templateURL=https://s3.us-east-1.amazonaws.com/sentry-performance-monitoring/cloudformation-template.yaml&stackName=Sentry-Rungutan-ECS
-2. Fill in the **AT LEAST** these parameters and hit "Create stack":
-  - SentrySystemSecretKey -> You can use a random UUIDv4 that you can get from https://www.uuidgenerator.net/
-  - InitialAdminUserEmail -> A **very strong** password that you should set for the initial admin user
-  - InitialAdminUserPassword
-  - SslLoadBalancer -> Sentry **cannot** properly work without HTTPS and it is a requirement for this stack
-  - SentryEmailUsername -> We recommend SES for that and you can create a user/pass from https://console.aws.amazon.com/ses/home#smtp-settings:
-  - SentryEmailPassword -> We recommend SES for that and you can create a user/pass from https://console.aws.amazon.com/ses/home#smtp-settings:
-  - SentryEmailHost -> As mentioned in the description, the SES endpoint is **email-smtp.${aws_region}.amazonaws.com**
-  - SentryEmailFrom -> If using SES, a confirmed address (or domain) from https://console.aws.amazon.com/ses/home#verified-senders-email:
-
-PS: It is recommended that you create your own administrators and delete the initial one after the initial deployment is done!
 
 
 ## Yes, we use it ourselves!
