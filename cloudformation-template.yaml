@@ -2025,6 +2025,11 @@ Resources:
                 - s3:HeadBucket
               Resource: "*"
 
+  LogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      RetentionInDays: 3
+
   TaskDefinitionSnubaApi:
     Type: AWS::ECS::TaskDefinition
     Properties:
