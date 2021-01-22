@@ -199,6 +199,18 @@ Here's for example our LIVE web platform loading time stats:
 
 ## Important note about stack
 
+### Elastic IP limits
+
+Starting with release [1.4.0](https://github.com/Rungutan/sentry-performance-monitoring/releases/tag/1.4.0) we added High-Availability for NAT Gateways as well. But before you check that, make sure your limits for VPC Elastic IPs can support an extra 3!
+
+You can find the current **Applied quote value** here -> https://console.aws.amazon.com/servicequotas/home#!/services/ec2/quotas under “**EC2-VPC Elastic IPs**”.
+
+
+PS: An increase from 5 to 20 is approved automatically by AWS 😊
+
+
+### Client Ingest DSN record
+
 The Client DSN record that is created by Sentry each and every time you create a new project looks something like this:
 
 ```
