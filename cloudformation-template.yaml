@@ -5560,10 +5560,10 @@ Resources:
                       },
                       taskDefinition=event["ResourceProperties"]["TaskDefinitionArn"]
                     )
-                    if "failures" in response and len(response["failures"]) > 0:
-                      print(response)
-                      data["Reason"] = "NOT_OK"
-                      cfnresponse.send(event, context, cfnresponse.FAILED, data)
+                  if "failures" in response and len(response["failures"]) > 0:
+                    print(response)
+                    data["Reason"] = "NOT_OK"
+                    cfnresponse.send(event, context, cfnresponse.FAILED, data)
 
                 else:
                   data["Reason"] = "OK"
