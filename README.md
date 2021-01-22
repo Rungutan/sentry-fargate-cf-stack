@@ -214,6 +214,14 @@ https://some_random_public_key_string_here@sentry-relay.rungutan.com/2
 ```
 
 
+____
+
+Also, I cannot stress this enough, but **PLEASE, PLEASE, FOR THE LOVE OF ALL THAT IS HOLY**, use custom values for these parameters:
+- SentrySystemSecretKey
+- InitialAdminUserEmail
+- InitialAdminUserPassword
+
+
 ## Final thoughts
 
 Performance Testing and Performance Monitoring ho hand in hand and none of them must be missing from the toolchain of any good DevOps, Developer or QA.
