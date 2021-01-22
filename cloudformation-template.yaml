@@ -402,7 +402,21 @@ Parameters:
     Default: "false"
     AllowedValues:
       - "true"
-      - "false"      
+      - "false"
+
+  # Sentry SLACK integration
+  SentrySlackClientId:
+    Type: String
+    Default: "182824420244.1408093862838"
+
+  SentrySlackClientSecret:
+    Type: String
+    NoEcho: true
+
+  SentrySlackSigningSecret:
+    Type: String
+    NoEcho: true
+      
 
 Metadata:
   AWS::CloudFormation::Interface:
@@ -2182,6 +2196,11 @@ Resources:
                     system.secret-key: "${SentrySystemSecretKey}"
                     system.url-prefix: "https://${SentryDnsRecord}"
 
+                    slack.client-id: "${SentrySlackClientId}"
+                    slack.client-secret: "${SentrySlackClientSecret}"
+                    slack.legacy-app: False
+                    slack.signing-secret: "${SentrySlackSigningSecret}"
+
                     filestore.backend: 's3'
                     filestore.options:
                       bucket_name: "${SentryBucket}"
@@ -2738,6 +2757,11 @@ Resources:
                     system.secret-key: "${SentrySystemSecretKey}"
                     system.url-prefix: "https://${SentryDnsRecord}"
 
+                    slack.client-id: "${SentrySlackClientId}"
+                    slack.client-secret: "${SentrySlackClientSecret}"
+                    slack.legacy-app: False
+                    slack.signing-secret: "${SentrySlackSigningSecret}"
+
                     filestore.backend: 's3'
                     filestore.options:
                       bucket_name: "${SentryBucket}"
@@ -2899,6 +2923,11 @@ Resources:
                   Fn::Sub: |
                     system.secret-key: "${SentrySystemSecretKey}"
                     system.url-prefix: "https://${SentryDnsRecord}"
+
+                    slack.client-id: "${SentrySlackClientId}"
+                    slack.client-secret: "${SentrySlackClientSecret}"
+                    slack.legacy-app: False
+                    slack.signing-secret: "${SentrySlackSigningSecret}"
 
                     filestore.backend: 's3'
                     filestore.options:
@@ -3108,6 +3137,11 @@ Resources:
                     system.secret-key: "${SentrySystemSecretKey}"
                     system.url-prefix: "https://${SentryDnsRecord}"
 
+                    slack.client-id: "${SentrySlackClientId}"
+                    slack.client-secret: "${SentrySlackClientSecret}"
+                    slack.legacy-app: False
+                    slack.signing-secret: "${SentrySlackSigningSecret}"
+
                     filestore.backend: 's3'
                     filestore.options:
                       bucket_name: "${SentryBucket}"
@@ -3316,6 +3350,11 @@ Resources:
                     system.secret-key: "${SentrySystemSecretKey}"
                     system.url-prefix: "https://${SentryDnsRecord}"
 
+                    slack.client-id: "${SentrySlackClientId}"
+                    slack.client-secret: "${SentrySlackClientSecret}"
+                    slack.legacy-app: False
+                    slack.signing-secret: "${SentrySlackSigningSecret}"
+
                     filestore.backend: 's3'
                     filestore.options:
                       bucket_name: "${SentryBucket}"
@@ -3523,6 +3562,11 @@ Resources:
                   Fn::Sub: |
                     system.secret-key: "${SentrySystemSecretKey}"
                     system.url-prefix: "https://${SentryDnsRecord}"
+
+                    slack.client-id: "${SentrySlackClientId}"
+                    slack.client-secret: "${SentrySlackClientSecret}"
+                    slack.legacy-app: False
+                    slack.signing-secret: "${SentrySlackSigningSecret}"
 
                     filestore.backend: 's3'
                     filestore.options:
@@ -4563,6 +4607,11 @@ Resources:
                     system.secret-key: "${SentrySystemSecretKey}"
                     system.url-prefix: "https://${SentryDnsRecord}"
 
+                    slack.client-id: "${SentrySlackClientId}"
+                    slack.client-secret: "${SentrySlackClientSecret}"
+                    slack.legacy-app: False
+                    slack.signing-secret: "${SentrySlackSigningSecret}"
+
                     filestore.backend: 's3'
                     filestore.options:
                       bucket_name: "${SentryBucket}"
@@ -4837,6 +4886,11 @@ Resources:
                   Fn::Sub: |
                     system.secret-key: "${SentrySystemSecretKey}"
                     system.url-prefix: "https://${SentryDnsRecord}"
+
+                    slack.client-id: "${SentrySlackClientId}"
+                    slack.client-secret: "${SentrySlackClientSecret}"
+                    slack.legacy-app: False
+                    slack.signing-secret: "${SentrySlackSigningSecret}"
 
                     filestore.backend: 's3'
                     filestore.options:
@@ -5227,6 +5281,11 @@ Resources:
                   Fn::Sub: |
                     system.secret-key: "${SentrySystemSecretKey}"
                     system.url-prefix: "https://${SentryDnsRecord}"
+
+                    slack.client-id: "${SentrySlackClientId}"
+                    slack.client-secret: "${SentrySlackClientSecret}"
+                    slack.legacy-app: False
+                    slack.signing-secret: "${SentrySlackSigningSecret}"
 
                     filestore.backend: 's3'
                     filestore.options:
