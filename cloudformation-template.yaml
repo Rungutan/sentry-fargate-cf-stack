@@ -1137,6 +1137,13 @@ Resources:
             - cloudwatch:*
             Resource: '*'
 
+  KafkaConfigurationLambdaLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName:
+        Fn::Sub: /aws/lambda/${KafkaConfigurationLambdaFunction}
+      RetentionInDays: 3
+
   KafkaConfigurationLambdaFunction:
     Type: AWS::Lambda::Function
     Properties:
@@ -1557,6 +1564,13 @@ Resources:
             - cloudwatch:*
             Resource: '*'
 
+  KafkaGetBrokersLambdaLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName:
+        Fn::Sub: /aws/lambda/${KafkaGetBrokersLambdaFunction}
+      RetentionInDays: 3
+
   KafkaGetBrokersLambdaFunction:
     Type: AWS::Lambda::Function
     Properties:
@@ -1851,11 +1865,6 @@ Resources:
       ListenerArn:
         Ref: ListenerHTTPProxy
       Priority: 1
-
-  LogGroup:
-    Type: AWS::Logs::LogGroup
-    Properties:
-      RetentionInDays: 14
 
   ScalingRole: 
     Type: AWS::IAM::Role
@@ -5428,6 +5437,13 @@ Resources:
             - cloudwatch:*
             Resource: '*'
 
+  DelayResourceLambdaLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName:
+        Fn::Sub: /aws/lambda/${DelayResourceLambdaFunction}
+      RetentionInDays: 3
+
   DelayResourceLambdaFunction:
     Type: 'AWS::Lambda::Function'
     Properties:
@@ -5506,6 +5522,13 @@ Resources:
               Resource:
                 - Fn::GetAtt: ExecutionRole.Arn
                 - Fn::GetAtt: TaskRole.Arn
+
+  ContainerSingleExecutionLambdaLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName:
+        Fn::Sub: /aws/lambda/${ContainerSingleExecutionLambdaFunction}
+      RetentionInDays: 3
 
   ContainerSingleExecutionLambdaFunction:
     Type: AWS::Lambda::Function
