@@ -177,7 +177,7 @@ Parameters:
   # OpsWorks ClickHouse variables
   ClickHouseCookbookUrl:
     Type: String
-    Default: https://github.com/Rungutan/sentry-performance-monitoring/releases/download/1.3.2/clickhouse-1.3.2.tar.gz
+    Default: https://github.com/Rungutan/sentry-performance-monitoring/releases/download/1.4.0/clickhouse-1.4.0.tar.gz
     
   ClickHouseInstanceType:
     Type: String
@@ -205,28 +205,28 @@ Parameters:
 
   SentryImage:
     Type: String
-    Default: public.ecr.aws/x7u7j5v7/sentry-base:1.3.2
-    Description: Public ECR = public.ecr.aws/x7u7j5v7/sentry-base:1.3.2 <AND> Docker HUB = rungutancommunity/sentry-base:1.3.2
+    Default: public.ecr.aws/x7u7j5v7/sentry-base:1.4.0
+    Description: Public ECR = public.ecr.aws/x7u7j5v7/sentry-base:1.4.0 <AND> Docker HUB = rungutancommunity/sentry-base:1.4.0
 
   SnubaImage:
     Type: String
-    Default: public.ecr.aws/x7u7j5v7/sentry-snuba:1.3.2
-    Description: Public ECR = public.ecr.aws/x7u7j5v7/sentry-snuba:1.3.2 <AND> Docker HUB = rungutancommunity/sentry-snuba:1.3.2
+    Default: public.ecr.aws/x7u7j5v7/sentry-snuba:1.4.0
+    Description: Public ECR = public.ecr.aws/x7u7j5v7/sentry-snuba:1.4.0 <AND> Docker HUB = rungutancommunity/sentry-snuba:1.4.0
 
   RelayImage:
     Type: String
-    Default: public.ecr.aws/x7u7j5v7/sentry-relay:1.3.2
-    Description: Public ECR = public.ecr.aws/x7u7j5v7/sentry-relay:1.3.2 <AND> Docker HUB = rungutancommunity/sentry-relay:1.3.2
+    Default: public.ecr.aws/x7u7j5v7/sentry-relay:1.4.0
+    Description: Public ECR = public.ecr.aws/x7u7j5v7/sentry-relay:1.4.0 <AND> Docker HUB = rungutancommunity/sentry-relay:1.4.0
 
   BashImage:
     Type: String
-    Default: public.ecr.aws/x7u7j5v7/bash:1.3.2
-    Description: Public ECR = public.ecr.aws/x7u7j5v7/bash:1.3.2 <AND> Docker HUB = rungutancommunity/bash:1.3.2
+    Default: public.ecr.aws/x7u7j5v7/bash:1.4.0
+    Description: Public ECR = public.ecr.aws/x7u7j5v7/bash:1.4.0 <AND> Docker HUB = rungutancommunity/bash:1.4.0
 
   ClickHouseImage:
     Type: String
-    Default: public.ecr.aws/x7u7j5v7/clickhouse-client:1.3.2
-    Description: Public ECR = public.ecr.aws/x7u7j5v7/clickhouse-client:1.3.2 <AND> Docker HUB = rungutancommunity/clickhouse-client:1.3.2
+    Default: public.ecr.aws/x7u7j5v7/clickhouse-client:1.4.0
+    Description: Public ECR = public.ecr.aws/x7u7j5v7/clickhouse-client:1.4.0 <AND> Docker HUB = rungutancommunity/clickhouse-client:1.4.0
 
   MinCountSnubaApi:
     Type: String
