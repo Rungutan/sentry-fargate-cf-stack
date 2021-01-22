@@ -172,8 +172,18 @@ Here's how a diagram of the deployed infrastructure looks like:
 
 You can deploy it by following these simple steps:
 
-* Create the stack in CloudFormation using this link -> https://console.aws.amazon.com/cloudformation/home#/stacks/create/review?templateURL=https://s3.us-east-1.amazonaws.com/sentry-performance-monitoring/cloudformation-template.yaml&stackName=Sentry-Rungutan-ECS
-* Fill in the remaining parameters and hit "Create stack"
+1. Create the stack in CloudFormation using this link -> https://console.aws.amazon.com/cloudformation/home#/stacks/create/review?templateURL=https://s3.us-east-1.amazonaws.com/sentry-performance-monitoring/cloudformation-template.yaml&stackName=Sentry-Rungutan-ECS
+2. Fill in the **AT LEAST** these parameters and hit "Create stack":
+  - SentrySystemSecretKey -> You can use a random UUIDv4 that you can get from https://www.uuidgenerator.net/
+  - InitialAdminUserEmail -> A **very strong** password that you should set for the initial admin user
+  - InitialAdminUserPassword
+  - SslLoadBalancer -> Sentry **cannot** properly work without HTTPS and it is a requirement for this stack
+  - SentryEmailUsername -> We recommend SES for that and you can create a user/pass from https://console.aws.amazon.com/ses/home#smtp-settings:
+  - SentryEmailPassword -> We recommend SES for that and you can create a user/pass from https://console.aws.amazon.com/ses/home#smtp-settings:
+  - SentryEmailHost -> As mentioned in the description, the SES endpoint is **email-smtp.${aws_region}.amazonaws.com**
+  - SentryEmailFrom -> If using SES, a confirmed address (or domain) from https://console.aws.amazon.com/ses/home#verified-senders-email:
+
+PS: It is recommended that you create your own administrators and delete the initial one after the initial deployment is done!
 
 
 ## Yes, we use it ourselves!
