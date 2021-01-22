@@ -610,22 +610,62 @@ Resources:
       InternetGatewayId:
         Ref: InternetGateway
 
-  NatGateway:
+  NatGatewayAz1:
     Type: AWS::EC2::NatGateway
     DependsOn: GatewayToInternet
     Properties:
       AllocationId:
         Fn::GetAtt:
-        - EIP
+        - EIPAz1
         - AllocationId
       SubnetId:
         Ref: PublicSubnet1
       Tags:
       - Key: Name
         Value:
-          Fn::Sub: "${AWS::StackName}-NatGateway"
+          Fn::Sub: "${AWS::StackName}-NatGateway-az-1"
 
-  EIP:
+  EIPAz1:
+    Type: AWS::EC2::EIP
+    Properties:
+      Domain: VPC
+
+  NatGatewayAz2:
+    Type: AWS::EC2::NatGateway
+    DependsOn: GatewayToInternet
+    Properties:
+      AllocationId:
+        Fn::GetAtt:
+        - EIPAz2
+        - AllocationId
+      SubnetId:
+        Ref: PublicSubnet2
+      Tags:
+      - Key: Name
+        Value:
+          Fn::Sub: "${AWS::StackName}-NatGateway-az-2"
+
+  EIPAz2:
+    Type: AWS::EC2::EIP
+    Properties:
+      Domain: VPC
+
+  NatGatewayAz3:
+    Type: AWS::EC2::NatGateway
+    DependsOn: GatewayToInternet
+    Properties:
+      AllocationId:
+        Fn::GetAtt:
+        - EIPAz3
+        - AllocationId
+      SubnetId:
+        Ref: PublicSubnet3
+      Tags:
+      - Key: Name
+        Value:
+          Fn::Sub: "${AWS::StackName}-NatGateway-az-3"
+
+  EIPAz3:
     Type: AWS::EC2::EIP
     Properties:
       Domain: VPC
@@ -733,7 +773,7 @@ Resources:
         Value:
           Fn::Sub: "${AWS::StackName}-private-az3"
 
-  PrivateRouteTable:
+  PrivateRouteTableAz1:
     Type: AWS::EC2::RouteTable
     DependsOn: VPC
     Properties:
@@ -742,59 +782,85 @@ Resources:
       Tags:
       - Key: Name
         Value:
-          Fn::Sub: "${AWS::StackName}-private"
+          Fn::Sub: "${AWS::StackName}-private-route-az1"
 
-  PrivateRoute:
-    DependsOn:
-    - PrivateRouteTable
-    - NatGateway
+  PrivateRouteAz1:
     Type: AWS::EC2::Route
     Properties:
       RouteTableId:
-        Ref: PrivateRouteTable
+        Ref: PrivateRouteTableAz1
       DestinationCidrBlock: 0.0.0.0/0
       NatGatewayId:
-        Ref: NatGateway
+        Ref: NatGatewayAz1
 
-  PrivateSubnetRouteTableAssociation1:
+  PrivateRouteTableAssociationAz1:
     Type: AWS::EC2::SubnetRouteTableAssociation
-    DependsOn:
-    - PrivateSubnet1
-    - PrivateRouteTable
     Properties:
       SubnetId:
         Ref: PrivateSubnet1
       RouteTableId:
-        Ref: PrivateRouteTable
+        Ref: PrivateRouteTableAz1
 
-  PrivateSubnetRouteTableAssociation2:
+  PrivateRouteTableAz2:
+    Type: AWS::EC2::RouteTable
+    DependsOn: VPC
+    Properties:
+      VpcId:
+        Ref: VPC
+      Tags:
+      - Key: Name
+        Value:
+          Fn::Sub: "${AWS::StackName}-private-route-az2"
+
+  PrivateRouteAz2:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId:
+        Ref: PrivateRouteTableAz2
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId:
+        Ref: NatGatewayAz2
+
+  PrivateRouteTableAssociationAz2:
     Type: AWS::EC2::SubnetRouteTableAssociation
-    DependsOn:
-    - PrivateSubnet2
-    - PrivateRouteTable
     Properties:
       SubnetId:
         Ref: PrivateSubnet2
       RouteTableId:
-        Ref: PrivateRouteTable
+        Ref: PrivateRouteTableAz2
 
-  PrivateSubnetRouteTableAssociation3:
+  PrivateRouteTableAz3:
+    Type: AWS::EC2::RouteTable
+    DependsOn: VPC
+    Properties:
+      VpcId:
+        Ref: VPC
+      Tags:
+      - Key: Name
+        Value:
+          Fn::Sub: "${AWS::StackName}-private-route-az3"
+
+  PrivateRouteAz3:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId:
+        Ref: PrivateRouteTableAz3
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId:
+        Ref: NatGatewayAz3
+
+  PrivateRouteTableAssociationAz3:
     Type: AWS::EC2::SubnetRouteTableAssociation
-    DependsOn:
-    - PrivateSubnet3
-    - PrivateRouteTable
     Properties:
       SubnetId:
         Ref: PrivateSubnet3
       RouteTableId:
-        Ref: PrivateRouteTable
+        Ref: PrivateRouteTableAz3
 
   S3VpcEndpoint:
     Type: AWS::EC2::VPCEndpoint
     DependsOn:
     - VPC
-    - PrivateRouteTable
-    - PublicRouteTable
     Properties:
       PolicyDocument:
         Statement:
@@ -803,8 +869,10 @@ Resources:
           Resource: "*"
           Principal: "*"
       RouteTableIds:
-      - Ref: PrivateRouteTable
       - Ref: PublicRouteTable
+      - Ref: PrivateRouteTableAz1
+      - Ref: PrivateRouteTableAz2
+      - Ref: PrivateRouteTableAz3
       ServiceName:
         Fn::Sub: "com.amazonaws.${AWS::Region}.s3"
       VpcId:
