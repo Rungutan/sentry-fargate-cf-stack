@@ -4796,6 +4796,8 @@ Resources:
       TaskDefinitionArn:
         Fn::GetAtt: TaskDefinitionClickHouseBootstrap.TaskDefinitionArn
       RerunOnUpdate: "NO"
+      Image:
+        Ref: ClickHouseImage
 
   DelayClickHouseBootstrapLambdaResult:
     Type: Custom::DelayClickHouseBootstrap
@@ -4949,6 +4951,8 @@ Resources:
       TaskDefinitionArn:
         Fn::GetAtt: TaskDefinitionSentryMigration.TaskDefinitionArn
       RerunOnUpdate: "YES"
+      Image:
+        Ref: SentryImage
 
   DelaySentryMigrationLambdaResult:
     Type: Custom::DelaySentryMigration
@@ -5066,6 +5070,8 @@ Resources:
       TaskDefinitionArn:
         Fn::GetAtt: TaskDefinitionSnubaBootstrap.TaskDefinitionArn
       RerunOnUpdate: "NO"
+      Image:
+        Ref: SnubaImage
 
   DelaySnubaBootstrapLambdaResult:
     Type: Custom::DelaySnubaBootstrap
@@ -5338,6 +5344,8 @@ Resources:
       TaskDefinitionArn:
         Fn::GetAtt: TaskDefinitionSentryInitialUser.TaskDefinitionArn
       RerunOnUpdate: "NO"
+      Image:
+        Ref: SentryImage
 
   DelayResourceLambdaRole:
     Type: AWS::IAM::Role
@@ -5460,7 +5468,7 @@ Resources:
               try:
                 ecs_client = boto3.client('ecs',region_name="${AWS::Region}")
 
-                if event['RequestType'] == 'Create' or (event['RequestType'] == 'Update' and str(event['RequestType']['RerunOnUpdate']).upper() == 'YES'):
+                if event['RequestType'] == 'Create':
                   
                   response = ecs_client.run_task(
                     cluster='${ClusterWorkers}',
@@ -5477,6 +5485,24 @@ Resources:
                     print(response)
                     data["Reason"] = "NOT_OK"
                     cfnresponse.send(event, context, cfnresponse.FAILED, data)
+
+                elif event['RequestType'] == 'Update' and event['RequestType']['RerunOnUpdate'] == 'YES':
+
+                  response = ecs_client.run_task(
+                      cluster='${ClusterWorkers}',
+                      networkConfiguration={
+                        'awsvpcConfiguration': {
+                          'subnets': ["${PrivateSubnet1}","${PrivateSubnet2}","${PrivateSubnet3}"],
+                              'securityGroups': [ "${Ec2SecurityGroup}"],
+                              'assignPublicIp': 'DISABLED'
+                          }
+                      },
+                      taskDefinition=event["ResourceProperties"]["TaskDefinitionArn"]
+                    )
+                    if "failures" in response and len(response["failures"]) > 0:
+                      print(response)
+                      data["Reason"] = "NOT_OK"
+                      cfnresponse.send(event, context, cfnresponse.FAILED, data)
 
                 else:
                   data["Reason"] = "OK"
