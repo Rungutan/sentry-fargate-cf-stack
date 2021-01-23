@@ -38,8 +38,8 @@ jobs:
           file: docker/sentry/Dockerfile
           push: true
           tags: |
-            rungutancommunity/sentry-base:${{ github.ref }}
-            public.ecr.aws/x7u7j5v7/sentry-base:${{ github.ref }}
+            rungutancommunity/sentry-base:${GITHUB_REF##*/}
+            public.ecr.aws/x7u7j5v7/sentry-base:${GITHUB_REF##*/}
       - name: Build and push Sentry Relay image
         id: docker_build_sentry_relay
         uses: docker/build-push-action@v2
@@ -48,8 +48,8 @@ jobs:
           file: docker/relay/Dockerfile
           push: true
           tags: |
-            rungutancommunity/sentry-relay:${{ github.ref }}
-            public.ecr.aws/x7u7j5v7/sentry-relay:${{ github.ref }}
+            rungutancommunity/sentry-relay:${GITHUB_REF##*/}
+            public.ecr.aws/x7u7j5v7/sentry-relay:${GITHUB_REF##*/}
       - name: Build and push Sentry Snuba image
         id: docker_build_sentry_snuba
         uses: docker/build-push-action@v2
@@ -58,8 +58,8 @@ jobs:
           file: docker/snuba/Dockerfile
           push: true
           tags: |
-            rungutancommunity/sentry-snuba:${{ github.ref }}
-            public.ecr.aws/x7u7j5v7/sentry-snuba:${{ github.ref }}
+            rungutancommunity/sentry-snuba:${GITHUB_REF##*/}
+            public.ecr.aws/x7u7j5v7/sentry-snuba:${GITHUB_REF##*/}
       - name: Build and push Bash image
         id: docker_build_bash
         uses: docker/build-push-action@v2
@@ -68,8 +68,8 @@ jobs:
           file: docker/bash/Dockerfile
           push: true
           tags: |
-            rungutancommunity/bash:${{ github.ref }}
-            public.ecr.aws/x7u7j5v7/bash:${{ github.ref }}
+            rungutancommunity/bash:${GITHUB_REF##*/}
+            public.ecr.aws/x7u7j5v7/bash:${GITHUB_REF##*/}
       - name: Build and push ClickHouse Client image
         id: docker_build_clickhouse_client
         uses: docker/build-push-action@v2
@@ -78,7 +78,7 @@ jobs:
           file: docker/clickhouse-client/Dockerfile
           push: true
           tags: |
-            rungutancommunity/clickhouse-client:${{ github.ref }}
-            public.ecr.aws/x7u7j5v7/clickhouse-client:${{ github.ref }}
+            rungutancommunity/clickhouse-client:${GITHUB_REF##*/}
+            public.ecr.aws/x7u7j5v7/clickhouse-client:${GITHUB_REF##*/}
 
 

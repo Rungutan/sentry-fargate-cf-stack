@@ -15,24 +15,22 @@ jobs:
         uses: actions/checkout@v2
       - name: Install packages
         run: apt-get update && apt-get install -y git rsync openssh-client build-essential python-dev python-pip
-      - name: Set context for ClickHouse
-        run: cd opsworks/clickhouse/
       - name: Install bundler
-        run: gem install bundler --no-document
+        run: cd opsworks/clickhouse/ && gem install bundler --no-document
       - name: Install gems
-        run: bundle install
+        run: cd opsworks/clickhouse/ && bundle install
       - name: Install berkshelf
-        run: gem install berkshelf -v '~> 6.3.4'
+        run: cd opsworks/clickhouse/ && gem install berkshelf -v '~> 6.3.4'
       - name: Package cookbook
-        run: berks package clickhouse-${{ github.ref }}.tar.gz
+        run: cd opsworks/clickhouse/ && berks package clickhouse-${GITHUB_REF##*/}.tar.gz
       - name: Create Release
         id: create_release
         uses: actions/create-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: ${{ github.ref }}
-          release_name: Release ${{ github.ref }}
+          tag_name: ${GITHUB_REF##*/}
+          release_name: Release ${GITHUB_REF##*/}
           draft: false
           prerelease: false
       - name: Upload Release Asset
@@ -42,6 +40,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
-          asset_path: ./clickhouse-${{ github.ref }}.tar.gz
-          asset_name: clickhouse-${{ github.ref }}.tar.gz
+          asset_path: opsworks/clickhouse/clickhouse-${GITHUB_REF##*/}.tar.gz
+          asset_name: clickhouse-${GITHUB_REF##*/}.tar.gz
           asset_content_type: application/tar+gzip
