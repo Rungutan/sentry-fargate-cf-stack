@@ -31,7 +31,7 @@ jobs:
         id: docker_build_sentry_basse
         uses: docker/build-push-action@v2
         with:
-          context: docker/sentry
+          context: docker/sentry/
           file: docker/sentry/Dockerfile
           no-cache: true
           push: true
@@ -42,7 +42,7 @@ jobs:
         id: docker_build_sentry_relay
         uses: docker/build-push-action@v2
         with:
-          context: docker/relay
+          context: docker/relay/
           file: docker/relay/Dockerfile
           no-cache: true
           push: true
@@ -53,7 +53,7 @@ jobs:
         id: docker_build_sentry_snuba
         uses: docker/build-push-action@v2
         with:
-          context: docker/snuba
+          context: docker/snuba/
           file: docker/snuba/Dockerfile
           no-cache: true
           push: true
@@ -64,7 +64,7 @@ jobs:
         id: docker_build_bash
         uses: docker/build-push-action@v2
         with:
-          context: docker/bash
+          context: docker/bash/
           file: docker/bash/Dockerfile
           no-cache: true
           push: true
@@ -75,7 +75,7 @@ jobs:
         id: docker_build_clickhouse_client
         uses: docker/build-push-action@v2
         with:
-          context: docker/clickhouse-client
+          context: docker/clickhouse-client/
           file: docker/clickhouse-client/Dockerfile
           no-cache: true
           push: true
