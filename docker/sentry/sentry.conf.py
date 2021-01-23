@@ -1,43 +1,18 @@
-# flake8: noqa
-from __future__ import absolute_import
-from sentry.conf.server import *
-from sentry.utils.types import Bool
+from sentry.conf.server import *  # NOQA
 from distutils.util import strtobool
-
 import os
-import os.path
 
-CONF_ROOT = os.path.dirname(__file__)
-env = os.environ.get
 
 DATABASES = {
     "default": {
         "ENGINE": "sentry.db.postgres",
-        "NAME": env("POSTGRES_DB"),
-        "USER": env("POSTGRES_USER"),
-        "PASSWORD": env("POSTGRES_PASSWORD"),
-        "HOST": env("POSTGRES_HOST"),
-        "PORT": int(env("POSTGRES_PORT"))
+        "NAME": os.environ.get("POSTGRES_DB"),
+        "USER": os.environ.get("POSTGRES_USER"),
+        "PASSWORD": os.environ.get("POSTGRES_PASSWORD"),
+        "HOST": os.environ.get("POSTGRES_HOST"),
+        "PORT": int(os.environ.get("POSTGRES_PORT"))
     }
 }
-
-# You should not change this setting after your database has been created
-# unless you have altered all schemas first
-SENTRY_USE_BIG_INTS = True
-
-# If you're expecting any kind of real traffic on Sentry, we highly recommend
-# configuring the CACHES and Redis settings
-
-###########
-# General #
-###########
-
-# Instruct Sentry that this install intends to be run by a single organization
-# and thus various UI optimizations should be enabled.
-SENTRY_SINGLE_ORGANIZATION = bool(strtobool(env("SENTRY_SINGLE_ORGANIZATION", "true")))
-SENTRY_OPTIONS["system.event-retention-days"] = int(env('SENTRY_EVENT_RETENTION_DAYS') or 90)
-SENTRY_RELAY_WHITELIST_PK = []
-SENTRY_RELAY_OPEN_REGISTRATION = True
 
 #########
 # Redis #
@@ -46,14 +21,16 @@ SENTRY_RELAY_OPEN_REGISTRATION = True
 # Generic Redis configuration used as defaults for various things including:
 # Buffers, Quotas, TSDB
 
+redis_host = os.environ.get("REDIS_HOST")
+redis_port = os.environ.get("REDIS_PORT")
 SENTRY_OPTIONS.update({
     'redis.clusters': {
         'default': {
             'hosts': {
                 0: {
-                    'host': env("REDIS_HOST"),
+                    'host': redis_host,
                     'password': '',
-                    'port': str(env("REDIS_PORT")),
+                    'port': str(redis_port),
                     'db': '0',
                 },
             },
@@ -61,26 +38,20 @@ SENTRY_OPTIONS.update({
     },
 })
 
-#########
-# Cache #
-#########
 
-# Sentry currently utilizes two separate mechanisms. While CACHES is not a
-# requirement, it will optimize several high throughput patterns.
+# You should not change this setting after your database has been created
+# unless you have altered all schemas first
+SENTRY_USE_BIG_INTS = True
 
-memcached = env("SENTRY_MEMCACHED_HOST") or (env("MEMCACHED_PORT_11211_TCP_ADDR") and "memcached")
-if memcached:
-    memcached_port = env("SENTRY_MEMCACHED_PORT") or "11211"
-    CACHES = {
-        "default": {
-            "BACKEND": "django.core.cache.backends.memcached.MemcachedCache",
-            "LOCATION": [memcached + ":" + memcached_port],
-            "TIMEOUT": 3600,
-        }
-    }
+###########
+# General #
+###########
 
-# A primary cache is required for things such as processing events
-SENTRY_CACHE = "sentry.cache.redis.RedisCache"
+# Instruct Sentry that this install intends to be run by a single organization
+# and thus various UI optimizations should be enabled.
+SENTRY_SINGLE_ORGANIZATION = True
+
+SENTRY_OPTIONS["system.event-retention-days"] = int(env('SENTRY_EVENT_RETENTION_DAYS') or 90)
 
 #########
 # Queue #
@@ -89,12 +60,25 @@ SENTRY_CACHE = "sentry.cache.redis.RedisCache"
 # See https://docs.getsentry.com/on-premise/server/queue/ for more
 # information on configuring your queue broker and workers. Sentry relies
 # on a Python framework called Celery to manage queues.
+BROKER_URL = os.environ.get("BROKER_URL", "redis://:@" + redis_host + ":" + redis_port + "/0")
 
-BROKER_URL = "redis://:@" + env("REDIS_HOST") + ":" + env("REDIS_PORT") + "/0"
+#########
+# Cache #
+#########
 
-################
-# Event Stream #
-################
+# Sentry currently utilizes two separate mechanisms. While CACHES is not a
+# requirement, it will optimize several high throughput patterns.
+
+# CACHES = {
+#     "default": {
+#         "BACKEND": "django.core.cache.backends.memcached.MemcachedCache",
+#         "LOCATION": ["memcached:11211"],
+#         "TIMEOUT": 3600,
+#     }
+# }
+
+# A primary cache is required for things such as processing events
+SENTRY_CACHE = "sentry.cache.redis.RedisCache"
 
 kafka_broker_1 = os.environ.get("KAFKA_BROKER_1")
 kafka_broker_2 = os.environ.get("KAFKA_BROKER_2")
@@ -110,7 +94,6 @@ SENTRY_EVENTSTREAM = "sentry.eventstream.kafka.KafkaEventStream"
 SENTRY_EVENTSTREAM_OPTIONS = {"producer_configuration": DEFAULT_KAFKA_OPTIONS}
 
 KAFKA_CLUSTERS["default"] = DEFAULT_KAFKA_OPTIONS
-
 
 ###############
 # Rate Limits #
@@ -169,12 +152,6 @@ SENTRY_DIGESTS = "sentry.digests.backends.redis.RedisBackend"
 ##############
 # Web Server #
 ##############
-
-# If you're using a reverse SSL proxy, you should enable the X-Forwarded-Proto
-# header and uncomment the following settings:
-# SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
-# SESSION_COOKIE_SECURE = True
-# CSRF_COOKIE_SECURE = True
 
 SENTRY_WEB_HOST = "0.0.0.0"
 SENTRY_WEB_PORT = 9000
@@ -263,6 +240,7 @@ SENTRY_FEATURES.update(
             "organizations:artifacts-in-settings",
             "organizations:transaction-events",
             "organizations:invite-members-rate-limits",
+
             "projects:alert-filters",
             "projects:custom-inbound-filters",
             "projects:data-forwarding",
@@ -284,19 +262,27 @@ SENTRY_FEATURES.update(
 #######################
 # Email Configuration #
 #######################
+if os.getenv('SENTRY_EMAIL_BACKEND') and os.getenv("SENTRY_EMAIL_USERNAME") and os.getenv("SENTRY_EMAIL_PASSWORD") and os.getenv("SENTRY_EMAIL_HOST"):
+    SENTRY_OPTIONS['mail.backend'] = os.getenv("SENTRY_EMAIL_BACKEND")
+    SENTRY_OPTIONS['mail.use-tls'] = bool(strtobool(os.getenv("SENTRY_EMAIL_USE_TLS", "true")))
+    SENTRY_OPTIONS['mail.username'] = os.getenv("SENTRY_EMAIL_USERNAME")
+    SENTRY_OPTIONS['mail.password'] = os.getenv("SENTRY_EMAIL_PASSWORD")
+    SENTRY_OPTIONS['mail.port'] = int(os.getenv("SENTRY_EMAIL_PORT"))
+    SENTRY_OPTIONS['mail.host'] = os.getenv("SENTRY_EMAIL_HOST")
+    SENTRY_OPTIONS['mail.from'] = os.getenv("SENTRY_EMAIL_FROM")
+    SENTRY_OPTIONS['mail.use-ssl'] = bool(strtobool(os.getenv("SENTRY_EMAIL_USE_SSL", "false")))
 
+#########################
+# Bitbucket Integration #
+########################
 
-email = env("SENTRY_EMAIL_BACKEND") and env("SENTRY_EMAIL_HOST")
-if email:
-    SENTRY_OPTIONS["mail.backend"] = env("SENTRY_EMAIL_BACKEND")
-    SENTRY_OPTIONS["mail.host"] = env("SENTRY_EMAIL_HOST")
-    SENTRY_OPTIONS["mail.password"] = env("SENTRY_EMAIL_PASSWORD")
-    SENTRY_OPTIONS["mail.username"] = env("SENTRY_EMAIL_USERNAME")
-    SENTRY_OPTIONS["mail.port"] = int(env("SENTRY_EMAIL_PORT") or 25)
-    SENTRY_OPTIONS["mail.use-tls"] = bool(strtobool(env("SENTRY_EMAIL_USE_TLS", "true")))
-    SENTRY_OPTIONS["mail.use-ssl"] = bool(strtobool(env("SENTRY_EMAIL_USE_SSL", "false")))
-    SENTRY_OPTIONS['mail.from'] = env("SENTRY_EMAIL_FROM")
-else:
-    SENTRY_OPTIONS["mail.backend"] = "dummy"
+# BITBUCKET_CONSUMER_KEY = 'YOUR_BITBUCKET_CONSUMER_KEY'
+# BITBUCKET_CONSUMER_SECRET = 'YOUR_BITBUCKET_CONSUMER_SECRET'
+
+#########
+# Relay #
+#########
+SENTRY_RELAY_WHITELIST_PK = []
+SENTRY_RELAY_OPEN_REGISTRATION = True
 
 
