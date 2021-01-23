@@ -107,7 +107,7 @@ jobs:
           tags: |
             rungutancommunity/sentry-snuba:latest
             public.ecr.aws/x7u7j5v7/sentry-snuba:latest
-  bassh:
+  bash:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout

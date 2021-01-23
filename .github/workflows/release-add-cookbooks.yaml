@@ -6,7 +6,7 @@ on:
     - '*'
 
 jobs:
-  main:
+  clickhouse:
     runs-on: ubuntu-latest
     container:
       image: ruby:2.5.3
