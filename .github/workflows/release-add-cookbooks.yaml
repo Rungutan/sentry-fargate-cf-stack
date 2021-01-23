@@ -1,0 +1,47 @@
+name: add-cookbooks
+
+on:
+  push:
+    tags:
+    - '*'
+
+jobs:
+  main:
+    runs-on: ubuntu-latest
+    container:
+      image: ruby:2.5.3
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Get the version
+        id: get_version
+        run: echo ::set-output name=VERSION::$(echo $GITHUB_REF | cut -d / -f 3)
+      - name: Package cookbook for clickhouse
+        run: |
+          cd opsworks/clickhouse/
+          apt-get update && apt-get install -y git rsync openssh-client build-essential python-dev python-pip
+          gem install bundler --no-document
+          bundle install
+          gem install berkshelf -v '~> 6.3.4'
+          berks package clickhouse.tar.gz
+          ls -altr
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ github.ref }}
+          draft: false
+          prerelease: false
+      - name: Upload Release Asset ClickHouse cookbook
+        id: upload-release-asset-clickhouse-cookbook
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: opsworks/clickhouse/clickhouse.tar.gz
+          asset_name: clickhouse-${{ steps.get_version.outputs.VERSION }}.tar.gz
+          asset_content_type: application/tar+gzip

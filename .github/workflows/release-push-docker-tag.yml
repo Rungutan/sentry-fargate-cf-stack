@@ -1,0 +1,87 @@
+name: push-docker-tag
+
+on:
+  push:
+    tags:
+    - '*'
+
+jobs:
+  main:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Get the version
+        id: get_version
+        run: echo ::set-output name=VERSION::$(echo $GITHUB_REF | cut -d / -f 3)
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v1
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1
+        with:
+          buildkitd-flags: --debug
+      - name: Login to Docker Hub
+        uses: docker/login-action@v1
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Login to ECR
+        uses: docker/login-action@v1
+        with:
+          registry: public.ecr.aws
+          username: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          password: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        env:
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+      - name: Build and push Sentry Base image
+        id: docker_build_sentry_basse
+        uses: docker/build-push-action@v2
+        with:
+          context: docker/sentry/
+          file: docker/sentry/Dockerfile
+          push: true
+          tags: |
+            rungutancommunity/sentry-base:${{ steps.get_version.outputs.VERSION }}
+            public.ecr.aws/x7u7j5v7/sentry-base:${{ steps.get_version.outputs.VERSION }}
+      - name: Build and push Sentry Relay image
+        id: docker_build_sentry_relay
+        uses: docker/build-push-action@v2
+        with:
+          context: docker/relay/
+          file: docker/relay/Dockerfile
+          push: true
+          tags: |
+            rungutancommunity/sentry-relay:${{ steps.get_version.outputs.VERSION }}
+            public.ecr.aws/x7u7j5v7/sentry-relay:${{ steps.get_version.outputs.VERSION }}
+      - name: Build and push Sentry Snuba image
+        id: docker_build_sentry_snuba
+        uses: docker/build-push-action@v2
+        with:
+          context: docker/snuba/
+          file: docker/snuba/Dockerfile
+          push: true
+          tags: |
+            rungutancommunity/sentry-snuba:${{ steps.get_version.outputs.VERSION }}
+            public.ecr.aws/x7u7j5v7/sentry-snuba:${{ steps.get_version.outputs.VERSION }}
+      - name: Build and push Bash image
+        id: docker_build_bash
+        uses: docker/build-push-action@v2
+        with:
+          context: docker/bash/
+          file: docker/bash/Dockerfile
+          push: true
+          tags: |
+            rungutancommunity/bash:${{ steps.get_version.outputs.VERSION }}
+            public.ecr.aws/x7u7j5v7/bash:${{ steps.get_version.outputs.VERSION }}
+      - name: Build and push ClickHouse Client image
+        id: docker_build_clickhouse_client
+        uses: docker/build-push-action@v2
+        with:
+          context: docker/clickhouse-client/
+          file: docker/clickhouse-client/Dockerfile
+          push: true
+          tags: |
+            rungutancommunity/clickhouse-client:${{ steps.get_version.outputs.VERSION }}
+            public.ecr.aws/x7u7j5v7/clickhouse-client:${{ steps.get_version.outputs.VERSION }}
+
+
