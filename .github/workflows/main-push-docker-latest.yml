@@ -24,7 +24,7 @@ jobs:
           username: ${{ secrets.AWS_ACCESS_KEY_ID }}
           password: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         env:
-          AWS_REGION: ${{ secrets.AWS_REGION }
+          AWS_REGION: ${{ secrets.AWS_REGION }}
       - name: Build and push Sentry Base image
         id: docker_build_sentry_basse
         uses: docker/build-push-action@v2
