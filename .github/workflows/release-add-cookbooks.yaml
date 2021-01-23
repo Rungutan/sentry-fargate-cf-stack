@@ -16,16 +16,15 @@ jobs:
       - name: Get the version
         id: get_version
         run: echo ::set-output name=VERSION::$(echo $GITHUB_REF | cut -d / -f 3)
-      - name: Install packages
-        run: apt-get update && apt-get install -y git rsync openssh-client build-essential python-dev python-pip
-      - name: Install bundler
-        run: cd opsworks/clickhouse/ && gem install bundler --no-document
-      - name: Install gems
-        run: cd opsworks/clickhouse/ && bundle install
-      - name: Install berkshelf
-        run: cd opsworks/clickhouse/ && gem install berkshelf -v '~> 6.3.4'
-      - name: Package cookbook
-        run: cd opsworks/clickhouse/ && berks package clickhouse.tar.gz
+      - name: Package cookbook for clickhouse
+        run: |
+          cd opsworks/clickhouse/
+          apt-get update && apt-get install -y git rsync openssh-client build-essential python-dev python-pip
+          gem install bundler --no-document
+          bundle install
+          gem install berkshelf -v '~> 6.3.4'
+          berks package clickhouse.tar.gz
+          ls -altr
       - name: Create Release
         id: create_release
         uses: actions/create-release@v1
@@ -36,13 +35,13 @@ jobs:
           release_name: Release ${{ github.ref }}
           draft: false
           prerelease: false
-      - name: Upload Release Asset
-        id: upload-release-asset 
+      - name: Upload Release Asset ClickHouse cookbook
+        id: upload-release-asset-clickhouse-cookbook
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_path: opsworks/clickhouse/clickhouse.tar.gz
           asset_name: clickhouse-${{ steps.get_version.outputs.VERSION }}.tar.gz
           asset_content_type: application/tar+gzip
