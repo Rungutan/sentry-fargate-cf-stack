@@ -86,6 +86,33 @@ You can deploy it by following these simple steps:
 
 PS: It is recommended that you create your own administrators and delete the initial one after the initial deployment is done!
 
+## Stack cost estimation
+
+These are the considerations:
+- the RDS instance is t2.medium with 20 GB initial provisioned storage (ON-DEMAND pricing logic)
+- the Redis instance is t2.medium (ON-DEMAND)
+- the Kafka cluster is comprised of 3 instances of t2.small (ON-DEMAND pricing logic)
+- the ClickHouse host is c4.xlarge with 200 GB storage (ON-DEMAND pricing logic)
+- 1 internal ELB for ClickHouse
+- 1 internal ALB for Snuba API
+- 1 external ALB for Sentry Relay and Web
+- the bare minimum of 1 ECS fargate container is running at any time for any and all ECS services in both SPOT and ON-DEMAND pricing logic
+
+
+The resulting charges would arise to something along these lines->
+
+| Element | Cost per month in USD |
+| --- | ----------- |
+| RDS | 65 |
+| Redis | 55 |
+| Kafka | 110 |
+| ClickHouse | 140 |
+| VPC and everything networking related | 30 |
+| 1 ELB + 2 ALB | 90 |
+| ECS | 200 |
+
+We are *NOT* responsible in any way for any pricing charges that you might incur that do not fit this description and will not be hold responsible in any way for the pricing charges that you will incur.
+
 ## Integrations
 
 ### Rungutan
