@@ -69,7 +69,7 @@ jobs:
         id: docker_build_clickhouse_client
         uses: docker/build-push-action@v2
         with:
-          context:./docker/clickhouse-client/
+          context: ./docker/clickhouse-client/
           file: ./docker/clickhouse-client/Dockerfile
           push: true
           tags: |
