@@ -11,6 +11,9 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
+      - name: Get the version
+        id: get_version
+        run: echo ::set-output name=VERSION::$(echo $GITHUB_REF | cut -d / -f 3)
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v1
       - name: Set up Docker Buildx
@@ -38,8 +41,8 @@ jobs:
           file: docker/sentry/Dockerfile
           push: true
           tags: |
-            rungutancommunity/sentry-base:${GITHUB_REF##*/}
-            public.ecr.aws/x7u7j5v7/sentry-base:${GITHUB_REF##*/}
+            rungutancommunity/sentry-base:${{ steps.get_version.outputs.VERSION }}
+            public.ecr.aws/x7u7j5v7/sentry-base:${{ steps.get_version.outputs.VERSION }}
       - name: Build and push Sentry Relay image
         id: docker_build_sentry_relay
         uses: docker/build-push-action@v2
@@ -48,8 +51,8 @@ jobs:
           file: docker/relay/Dockerfile
           push: true
           tags: |
-            rungutancommunity/sentry-relay:${GITHUB_REF##*/}
-            public.ecr.aws/x7u7j5v7/sentry-relay:${GITHUB_REF##*/}
+            rungutancommunity/sentry-relay:${{ steps.get_version.outputs.VERSION }}
+            public.ecr.aws/x7u7j5v7/sentry-relay:${{ steps.get_version.outputs.VERSION }}
       - name: Build and push Sentry Snuba image
         id: docker_build_sentry_snuba
         uses: docker/build-push-action@v2
@@ -58,8 +61,8 @@ jobs:
           file: docker/snuba/Dockerfile
           push: true
           tags: |
-            rungutancommunity/sentry-snuba:${GITHUB_REF##*/}
-            public.ecr.aws/x7u7j5v7/sentry-snuba:${GITHUB_REF##*/}
+            rungutancommunity/sentry-snuba:${{ steps.get_version.outputs.VERSION }}
+            public.ecr.aws/x7u7j5v7/sentry-snuba:${{ steps.get_version.outputs.VERSION }}
       - name: Build and push Bash image
         id: docker_build_bash
         uses: docker/build-push-action@v2
@@ -68,8 +71,8 @@ jobs:
           file: docker/bash/Dockerfile
           push: true
           tags: |
-            rungutancommunity/bash:${GITHUB_REF##*/}
-            public.ecr.aws/x7u7j5v7/bash:${GITHUB_REF##*/}
+            rungutancommunity/bash:${{ steps.get_version.outputs.VERSION }}
+            public.ecr.aws/x7u7j5v7/bash:${{ steps.get_version.outputs.VERSION }}
       - name: Build and push ClickHouse Client image
         id: docker_build_clickhouse_client
         uses: docker/build-push-action@v2
@@ -78,7 +81,7 @@ jobs:
           file: docker/clickhouse-client/Dockerfile
           push: true
           tags: |
-            rungutancommunity/clickhouse-client:${GITHUB_REF##*/}
-            public.ecr.aws/x7u7j5v7/clickhouse-client:${GITHUB_REF##*/}
+            rungutancommunity/clickhouse-client:${{ steps.get_version.outputs.VERSION }}
+            public.ecr.aws/x7u7j5v7/clickhouse-client:${{ steps.get_version.outputs.VERSION }}
 
 
