@@ -2,14 +2,7 @@ name: push-docker-latest
 
 on:
   push:
-    branches: deployment-automation
-    paths:
-      - "docker/bash/**"
-      - "docker/clickhouse-client/**"
-      - "docker/relay/**"
-      - "docker/sentry/**"
-      - "docker/snuba/**"
-      - ".github/workflows/main-push-docker-latest.yml"
+    branches: deployment-automationw
 
 jobs:
   main:
@@ -36,16 +29,12 @@ jobs:
           password: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         env:
           AWS_REGION: ${{ secrets.AWS_REGION }}
-      - name: Print current stupid path
-        run: ls -altr && pwd
-      - name: Print current stupid path behind me
-        run: cd .. && ls -altr && pwd
       - name: Build and push Sentry Base image
         id: docker_build_sentry_basse
         uses: docker/build-push-action@v2
         with:
           context: docker/sentry/
-          file: docker/sentry//Dockerfile
+          file: docker/sentry/Dockerfile
           push: true
           tags: |
             rungutancommunity/sentry-base:latest
@@ -55,7 +44,7 @@ jobs:
         uses: docker/build-push-action@v2
         with:
           context: docker/relay/
-          file: docker/relay//Dockerfile
+          file: docker/relay/Dockerfile
           push: true
           tags: |
             rungutancommunity/sentry-relay:latest
@@ -65,7 +54,7 @@ jobs:
         uses: docker/build-push-action@v2
         with:
           context: docker/snuba/
-          file: docker/snuba//Dockerfile
+          file: docker/snuba/Dockerfile
           push: true
           tags: |
             rungutancommunity/sentry-snuba:latest
@@ -75,7 +64,7 @@ jobs:
         uses: docker/build-push-action@v2
         with:
           context: docker/bash/
-          file: docker/bash//Dockerfile
+          file: docker/bash/Dockerfile
           push: true
           tags: |
             rungutancommunity/bash:latest
@@ -85,7 +74,7 @@ jobs:
         uses: docker/build-push-action@v2
         with:
           context: docker/clickhouse-client/
-          file: docker/clickhouse-client//Dockerfile
+          file: docker/clickhouse-client/Dockerfile
           push: true
           tags: |
             rungutancommunity/clickhouse-client:latest
