@@ -27,6 +27,8 @@ jobs:
           AWS_REGION: ${{ secrets.AWS_REGION }}
       - name: Print current stupid path
         run: ls -altr && pwd
+      - name: Print current stupid path behind me
+        run: cd .. && ls -altr && pwd
       - name: Build and push Sentry Base image
         id: docker_build_sentry_basse
         uses: docker/build-push-action@v2
