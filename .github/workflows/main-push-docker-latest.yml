@@ -3,6 +3,13 @@ name: ci
 on:
   push:
     branches: deployment-automation
+    paths:
+      - "docker/bash/**"
+      - "docker/clickhouse-client/**"
+      - "docker/relay/**"
+      - "docker/sentry/**"
+      - "docker/snuba/**"
+      - ".github/workflows/main-push-docker-latest.yml"
 
 jobs:
   main:
@@ -33,8 +40,7 @@ jobs:
         with:
           context: docker/sentry/
           file: docker/sentry//Dockerfile
-          no-cache: true
-          platforms: linux/amd64,linux/386,linux/arm64/v8,linux/arm/v7,linux/arm/v6
+          push: true
           tags: |
             rungutancommunity/sentry-base:latest
             public.ecr.aws/x7u7j5v7/sentry-base:latest
@@ -44,8 +50,7 @@ jobs:
         with:
           context: docker/relay/
           file: docker/relay//Dockerfile
-          no-cache: true
-          platforms: linux/amd64,linux/386,linux/arm64/v8,linux/arm/v7,linux/arm/v6
+          push: true
           tags: |
             rungutancommunity/sentry-relay:latest
             public.ecr.aws/x7u7j5v7/sentry-relay:latest
@@ -55,8 +60,7 @@ jobs:
         with:
           context: docker/snuba/
           file: docker/snuba//Dockerfile
-          no-cache: true
-          platforms: linux/amd64,linux/386,linux/arm64/v8,linux/arm/v7,linux/arm/v6
+          push: true
           tags: |
             rungutancommunity/sentry-snuba:latest
             public.ecr.aws/x7u7j5v7/sentry-snuba:latest
@@ -66,8 +70,7 @@ jobs:
         with:
           context: docker/bash/
           file: docker/bash//Dockerfile
-          no-cache: true
-          platforms: linux/amd64,linux/386,linux/arm64/v8,linux/arm/v7,linux/arm/v6
+          push: true
           tags: |
             rungutancommunity/bash:latest
             public.ecr.aws/x7u7j5v7/bash:latest
@@ -77,8 +80,7 @@ jobs:
         with:
           context: docker/clickhouse-client/
           file: docker/clickhouse-client//Dockerfile
-          no-cache: true
-          platforms: linux/amd64,linux/386,linux/arm64/v8,linux/arm/v7,linux/arm/v6
+          push: true
           tags: |
             rungutancommunity/clickhouse-client:latest
             public.ecr.aws/x7u7j5v7/clickhouse-client:latest
