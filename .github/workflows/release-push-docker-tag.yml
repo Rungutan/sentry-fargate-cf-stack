@@ -24,7 +24,7 @@ jobs:
           username: ${{ secrets.AWS_ACCESS_KEY_ID }}
           password: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       - name: Build and push Sentry Base image
-        id: docker_build
+        id: docker_build_sentry_base
         uses: docker/build-push-action@v2
         with:
           context: .
@@ -34,7 +34,7 @@ jobs:
             rungutancommunity/sentry-base:${GITHUB_REF}
             public.ecr.aws/x7u7j5v7/sentry-base:${GITHUB_REF}
       - name: Build and push Sentry Relay image
-        id: docker_build
+        id: docker_build_sentry_relay
         uses: docker/build-push-action@v2
         with:
           context: .
@@ -44,7 +44,7 @@ jobs:
             rungutancommunity/sentry-relay:${GITHUB_REF}
             public.ecr.aws/x7u7j5v7/sentry-relay:${GITHUB_REF}
       - name: Build and push Sentry Snuba image
-        id: docker_build
+        id: docker_build_sentry_snuba
         uses: docker/build-push-action@v2
         with:
           context: .
@@ -54,7 +54,7 @@ jobs:
             rungutancommunity/sentry-snuba:${GITHUB_REF}
             public.ecr.aws/x7u7j5v7/sentry-snuba:${GITHUB_REF}
       - name: Build and push Bash image
-        id: docker_build
+        id: docker_build_bash
         uses: docker/build-push-action@v2
         with:
           context: .
@@ -64,7 +64,7 @@ jobs:
             rungutancommunity/bash:${GITHUB_REF}
             public.ecr.aws/x7u7j5v7/bash:${GITHUB_REF}
       - name: Build and push ClickHouse Client image
-        id: docker_build
+        id: docker_build_clickhouse_client
         uses: docker/build-push-action@v2
         with:
           context: .
