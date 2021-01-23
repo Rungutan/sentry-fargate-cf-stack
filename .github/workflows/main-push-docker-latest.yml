@@ -2,7 +2,7 @@ name: push-docker-latest
 
 on:
   push:
-    branches: deployment-automationw
+    branches: main
 
 jobs:
   main:
