@@ -328,9 +328,13 @@ Parameters:
     Type: String
     Default: "10"
 
-  DesiredCountSentryWorkers:
+  MinCountSentryWorkers:
     Type: String
     Default: "1"
+
+  MaxCountSentryWorkers:
+    Type: String
+    Default: "10"
 
   SentrySystemSecretKey:
     Type: String
@@ -500,7 +504,8 @@ Metadata:
           - MaxCountSnubaTransactionsConsumer
           - MinCountSnubaEventsReplacer
           - MaxCountSnubaEventsReplacer
-          - DesiredCountSentryWorkers
+          - MinCountSentryWorkers
+          - MaxCountSentryWorkers
           - SentrySystemSecretKey
 
       - Label:
@@ -4811,7 +4816,7 @@ Resources:
         MinimumHealthyPercent: 100
         MaximumPercent: 200
       DesiredCount:
-        Ref: DesiredCountSentryWorkers
+        Ref: MinCountSentryWorkers
       PropagateTags: SERVICE
       NetworkConfiguration: 
         AwsvpcConfiguration:
@@ -4822,6 +4827,52 @@ Resources:
             - Ref: PrivateSubnet3
           SecurityGroups:
             - Ref: Ec2SecurityGroup
+
+  AutoScalingTargetSentryWorkers:
+    Type: AWS::ApplicationAutoScaling::ScalableTarget
+    Properties:
+      MaxCapacity:
+        Ref: MaxCountSentryWorkers
+      MinCapacity:
+        Ref: MinCountSentryWorkers
+      ResourceId:
+        Fn::Sub: service/${ClusterWorkers}/${ServiceSentryWorkers.Name}
+      RoleARN:
+        Fn::GetAtt: ScalingRole.Arn
+      ScalableDimension: ecs:service:DesiredCount
+      ServiceNamespace: ecs
+
+  CpuAutoScalingPolicySentryWorkers:
+    Type: AWS::ApplicationAutoScaling::ScalingPolicy
+    Properties:
+      PolicyName:
+        Fn::Sub: ${AWS::StackName}-Cpu-SentryWorkers
+      PolicyType: TargetTrackingScaling
+      ScalingTargetId:
+        Ref: AutoScalingTargetSentryWorkers
+      TargetTrackingScalingPolicyConfiguration:
+        DisableScaleIn: false
+        TargetValue: 40
+        ScaleInCooldown: 600
+        ScaleOutCooldown: 60
+        PredefinedMetricSpecification: 
+          PredefinedMetricType: ECSServiceAverageCPUUtilization
+
+  RamAutoScalingPolicySentryWorkers:
+    Type: AWS::ApplicationAutoScaling::ScalingPolicy
+    Properties:
+      PolicyName:
+        Fn::Sub: ${AWS::StackName}-Ram-SentryWorkers
+      PolicyType: TargetTrackingScaling
+      ScalingTargetId:
+        Ref: AutoScalingTargetSentryWorkers
+      TargetTrackingScalingPolicyConfiguration:
+        DisableScaleIn: false
+        TargetValue: 40 
+        ScaleInCooldown: 600
+        ScaleOutCooldown: 60
+        PredefinedMetricSpecification: 
+          PredefinedMetricType: ECSServiceAverageMemoryUtilization
 
   TaskDefinitionClickHouseBootstrap:
     Type: AWS::ECS::TaskDefinition
