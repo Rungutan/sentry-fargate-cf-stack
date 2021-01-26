@@ -1718,10 +1718,29 @@ Resources:
       SecretString:
         Ref: SentryEmailPassword
 
+  S3KmsKey:
+    Type: AWS::KMS::Key
+    Properties:
+      KeyPolicy:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Action: kms:*
+            Resource: "*"
+            Principal:
+              AWS:
+                - Fn::Sub: arn:aws:iam::${AWS::AccountId}:root
+
   SentryBucket:
     Type: AWS::S3::Bucket
     DeletionPolicy: Retain
     Properties:
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+        - ServerSideEncryptionByDefault:
+            SSEAlgorithm: 'aws:kms'
+            KMSMasterKeyID:
+              Fn::GetAtt: S3KmsKey.Arn
       PublicAccessBlockConfiguration:
         BlockPublicAcls: True
         BlockPublicPolicy: True
@@ -5720,10 +5739,3 @@ Resources:
                 print(str(e))
                 data["Reason"] = str(e)
                 cfnresponse.send(event, context, cfnresponse.FAILED, data)
-
-
-
-
-
-
-
