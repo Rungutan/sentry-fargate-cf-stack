@@ -1721,6 +1721,7 @@ Resources:
   S3KmsKey:
     Type: AWS::KMS::Key
     Properties:
+      EnableKeyRotation: true
       KeyPolicy:
         Version: "2012-10-17"
         Statement:
@@ -1730,6 +1731,23 @@ Resources:
             Principal:
               AWS:
                 - Fn::Sub: arn:aws:iam::${AWS::AccountId}:root
+          - Effect: Allow
+            Principal:
+              AWS: "*"
+            Action:
+              - kms:Encrypt
+              - kms:Decrypt
+              - kms:ReEncrypt*
+              - kms:GenerateDataKey*
+              - kms:CreateGrant
+              - kms:DescribeKey
+            Resource: "*"
+            Condition:
+              StringEquals:
+                kms:CallerAccount:
+                  Ref: AWS::AccountId
+                kms:ViaService:
+                  Fn::Sub: s3.${AWS::Region}.amazonaws.com
 
   SentryBucket:
     Type: AWS::S3::Bucket
