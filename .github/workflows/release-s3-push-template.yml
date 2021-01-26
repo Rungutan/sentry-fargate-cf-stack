@@ -6,7 +6,7 @@ on:
     - '*'
 
 jobs:
-  s3-upload:
+  s3-upload-release:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -17,7 +17,7 @@ jobs:
       - name: Upload template file to bucket with latest
         uses: ItsKarma/aws-cli@v1.70.0
         with:
-          args: s3 cp cloudformation-template.yaml s3://sentry-performance-monitoring/cloudformation-template.yaml
+          args: s3 cp cloudformation-template.yaml s3://sentry-fargate-cf-stack/cloudformation-template.yaml
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
@@ -25,7 +25,7 @@ jobs:
       - name: Upload template file to bucket with tag
         uses: ItsKarma/aws-cli@v1.70.0
         with:
-          args: s3 cp cloudformation-template.yaml s3://sentry-performance-monitoring/${{ steps.get_version.outputs.VERSION }}/cloudformation-template.yaml
+          args: s3 cp cloudformation-template.yaml s3://sentry-fargate-cf-stack/${{ steps.get_version.outputs.VERSION }}/cloudformation-template.yaml
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
