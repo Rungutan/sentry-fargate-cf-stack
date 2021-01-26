@@ -1,6 +1,6 @@
-# Sentry Performance Monitoring
+# Sentry Fargate CloudFormation stack
 
-A reference of this article is available on the Rungutan Blog here -> https://rungutan.com/blog/sentry-performance-monitoring/.
+A reference of this article is available on the Rungutan Blog here -> https://rungutan.com/blog/sentry-fargate-cf-stack/.
 
 ## What is Performance Monitoring?
 
@@ -73,7 +73,7 @@ Here's how a diagram of the deployed infrastructure looks like:
 
 You can deploy it by following these simple steps:
 
-1. Create the stack in CloudFormation using this link -> https://console.aws.amazon.com/cloudformation/home#/stacks/create/review?templateURL=https://s3.us-east-1.amazonaws.com/sentry-performance-monitoring/cloudformation-template.yaml&stackName=Sentry-Rungutan-ECS
+1. Create the stack in CloudFormation using this link -> https://console.aws.amazon.com/cloudformation/home#/stacks/create/review?templateURL=https://s3.us-east-1.amazonaws.com/sentry-fargate-cf-stack/cloudformation-template.yaml&stackName=Sentry-Rungutan-ECS
 2. Fill in **AT LEAST** these parameters and hit "Create stack":
   - SentrySystemSecretKey -> You can use a random UUIDv4 that you can get from https://www.uuidgenerator.net/
   - InitialAdminUserEmail -> A **very strong** password that you should set for the initial admin user
@@ -120,7 +120,7 @@ We are *NOT* responsible in any way for any pricing charges that you might incur
 As part of the CI/CD pipeline definition mentioned in [// Article - How to include Load Testing in your CI / CD pipeline?](https://rungutan.com/blog/ci-cd-pipeline-workflow/), you would simple have to create METRIC ALERTS for monitoring in Sentry and include the load test into your pipeline:
 
 <p align="center">
-  <img src="https://sentry-performance-monitoring.s3.amazonaws.com/sentry-metric-alerts.png" width="580">
+  <img src="https://sentry-fargate-cf-stack.s3.amazonaws.com/sentry-metric-alerts.png" width="580">
  </p>
 
 For reference, a sample **GitHub Actions** pipeline for Rungutan looks like this:
@@ -228,7 +228,7 @@ Here's for example our LIVE web platform loading time stats:
 
 ### Elastic IP limits
 
-Starting with release [1.4.0](https://github.com/Rungutan/sentry-performance-monitoring/releases/tag/1.4.0) we added High-Availability for NAT Gateways as well. But before you check that, make sure your limits for VPC Elastic IPs can support an extra 3!
+Starting with release [1.4.0](https://github.com/Rungutan/sentry-fargate-cf-stack/releases/tag/1.4.0) we added High-Availability for NAT Gateways as well. But before you check that, make sure your limits for VPC Elastic IPs can support an extra 3!
 
 You can find the current **Applied quote value** here -> https://console.aws.amazon.com/servicequotas/home#!/services/ec2/quotas under “**EC2-VPC Elastic IPs**”.
 
