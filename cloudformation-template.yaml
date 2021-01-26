@@ -1755,7 +1755,8 @@ Resources:
     Properties:
       BucketEncryption:
         ServerSideEncryptionConfiguration:
-        - ServerSideEncryptionByDefault:
+        - BucketKeyEnabled: true
+          ServerSideEncryptionByDefault:
             SSEAlgorithm: 'aws:kms'
             KMSMasterKeyID:
               Fn::GetAtt: S3KmsKey.Arn
