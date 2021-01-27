@@ -1420,9 +1420,43 @@ Resources:
         - Ref: PrivateSubnet2
         - Ref: PrivateSubnet3
   
-  ElastiCacheNode:
-    Type: AWS::ElastiCache::CacheCluster
+  ElastiCacheKmsKey:
+    Type: AWS::KMS::Key
+    Properties:
+      EnableKeyRotation: true
+      KeyPolicy:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Action: kms:*
+            Resource: "*"
+            Principal:
+              AWS:
+                - Fn::Sub: arn:aws:iam::${AWS::AccountId}:root
+          - Effect: Allow
+            Principal:
+              AWS: "*"
+            Action:
+              - kms:Encrypt
+              - kms:Decrypt
+              - kms:ReEncrypt*
+              - kms:GenerateDataKey*
+              - kms:CreateGrant
+              - kms:DescribeKey
+            Resource: "*"
+            Condition:
+              StringEquals:
+                kms:CallerAccount:
+                  Ref: AWS::AccountId
+                kms:ViaService:
+                  Fn::Sub: s3.${AWS::Region}.amazonaws.com
+
+  ElastiCacheReplicationGroup:
+    Type: AWS::ElastiCache::ReplicationGroup
     Properties: 
+      AutomaticFailoverEnabled: true
+      AutoMinorVersionUpgrade: true
+      AtRestEncryptionEnabled: true
       CacheNodeType:
         Ref: ElastiCacheInstanceClass
       CacheParameterGroupName: "default.redis5.0"
@@ -1430,9 +1464,14 @@ Resources:
         Ref: ElastiCacheSubnetGroup
       Engine: redis
       EngineVersion: "5.0.6"
-      NumCacheNodes: "1"
+      KmsKeyId:
+        Fn::GetAtt: ElastiCacheKmsKey.Arn
+      MultiAZEnabled: true
+      NumCacheClusters: 2
       Port: "6379"
-      VpcSecurityGroupIds: 
+      ReplicationGroupDescription:
+        Fn::Sub: Redis based ElastiCache cluster for ${AWS::StackName}
+      SecurityGroupIds: 
         - Fn::GetAtt: Ec2SecurityGroup.GroupId
 
   ServiceRole:
@@ -2105,7 +2144,7 @@ Resources:
                 Ref: AWS::Region
             - Name: REDIS_HOST
               Value:
-                Fn::GetAtt: ElastiCacheNode.RedisEndpoint.Address
+                Fn::GetAtt: ElastiCacheReplicationGroup.PrimaryEndPoint.Address
             - Name: REDIS_PORT
               Value: "6379"
             - Name: CLICKHOUSE_HOST
@@ -2379,7 +2418,7 @@ Resources:
                 Fn::Sub: http://${SnubaApiDnsRecord}
             - Name: REDIS_HOST
               Value:
-                Fn::GetAtt: ElastiCacheNode.RedisEndpoint.Address
+                Fn::GetAtt: ElastiCacheReplicationGroup.PrimaryEndPoint.Address
             - Name: REDIS_PORT
               Value: "6379"
             - Name: CLICKHOUSE_HOST
@@ -2601,7 +2640,7 @@ Resources:
                           value: "${KafkaGetBrokersLambdaResult.KafkaBroker1},${KafkaGetBrokersLambdaResult.KafkaBroker2},${KafkaGetBrokersLambdaResult.KafkaBroker3}"
                         - name: "message.max.bytes"
                           value: 50000000  # 50MB or bust
-                      redis: "redis://:@${ElastiCacheNode.RedisEndpoint.Address}:6379"
+                      redis: "redis://:@${ElastiCacheReplicationGroup.PrimaryEndPoint.Address}:6379"
           MountPoints:
             - ContainerPath: /config-relay/
               SourceVolume: relay-conf-vol
@@ -2643,7 +2682,7 @@ Resources:
               Value: "3000"
             - Name: REDIS_HOST
               Value:
-                Fn::GetAtt: ElastiCacheNode.RedisEndpoint.Address
+                Fn::GetAtt: ElastiCacheReplicationGroup.PrimaryEndPoint.Address
             - Name: REDIS_PORT
               Value: "6379"
             - Name: CLICKHOUSE_HOST
@@ -2937,7 +2976,7 @@ Resources:
                 Fn::Sub: http://${SnubaApiDnsRecord}
             - Name: REDIS_HOST
               Value:
-                Fn::GetAtt: ElastiCacheNode.RedisEndpoint.Address
+                Fn::GetAtt: ElastiCacheReplicationGroup.PrimaryEndPoint.Address
             - Name: REDIS_PORT
               Value: "6379"
             - Name: CLICKHOUSE_HOST
@@ -3104,7 +3143,7 @@ Resources:
                 Fn::Sub: http://${SnubaApiDnsRecord}
             - Name: REDIS_HOST
               Value:
-                Fn::GetAtt: ElastiCacheNode.RedisEndpoint.Address
+                Fn::GetAtt: ElastiCacheReplicationGroup.PrimaryEndPoint.Address
             - Name: REDIS_PORT
               Value: "6379"
             - Name: CLICKHOUSE_HOST
@@ -3317,7 +3356,7 @@ Resources:
                 Fn::Sub: http://${SnubaApiDnsRecord}
             - Name: REDIS_HOST
               Value:
-                Fn::GetAtt: ElastiCacheNode.RedisEndpoint.Address
+                Fn::GetAtt: ElastiCacheReplicationGroup.PrimaryEndPoint.Address
             - Name: REDIS_PORT
               Value: "6379"
             - Name: CLICKHOUSE_HOST
@@ -3530,7 +3569,7 @@ Resources:
                 Fn::Sub: http://${SnubaApiDnsRecord}
             - Name: REDIS_HOST
               Value:
-                Fn::GetAtt: ElastiCacheNode.RedisEndpoint.Address
+                Fn::GetAtt: ElastiCacheReplicationGroup.PrimaryEndPoint.Address
             - Name: REDIS_PORT
               Value: "6379"
             - Name: CLICKHOUSE_HOST
@@ -3743,7 +3782,7 @@ Resources:
                 Fn::Sub: http://${SnubaApiDnsRecord}
             - Name: REDIS_HOST
               Value:
-                Fn::GetAtt: ElastiCacheNode.RedisEndpoint.Address
+                Fn::GetAtt: ElastiCacheReplicationGroup.PrimaryEndPoint.Address
             - Name: REDIS_PORT
               Value: "6379"
             - Name: CLICKHOUSE_HOST
@@ -3902,7 +3941,7 @@ Resources:
                 Ref: AWS::Region
             - Name: REDIS_HOST
               Value:
-                Fn::GetAtt: ElastiCacheNode.RedisEndpoint.Address
+                Fn::GetAtt: ElastiCacheReplicationGroup.PrimaryEndPoint.Address
             - Name: REDIS_PORT
               Value: "6379"
             - Name: CLICKHOUSE_HOST
@@ -4068,7 +4107,7 @@ Resources:
                 Ref: AWS::Region
             - Name: REDIS_HOST
               Value:
-                Fn::GetAtt: ElastiCacheNode.RedisEndpoint.Address
+                Fn::GetAtt: ElastiCacheReplicationGroup.PrimaryEndPoint.Address
             - Name: REDIS_PORT
               Value: "6379"
             - Name: CLICKHOUSE_HOST
@@ -4234,7 +4273,7 @@ Resources:
                 Ref: AWS::Region
             - Name: REDIS_HOST
               Value:
-                Fn::GetAtt: ElastiCacheNode.RedisEndpoint.Address
+                Fn::GetAtt: ElastiCacheReplicationGroup.PrimaryEndPoint.Address
             - Name: REDIS_PORT
               Value: "6379"
             - Name: CLICKHOUSE_HOST
@@ -4400,7 +4439,7 @@ Resources:
                 Ref: AWS::Region
             - Name: REDIS_HOST
               Value:
-                Fn::GetAtt: ElastiCacheNode.RedisEndpoint.Address
+                Fn::GetAtt: ElastiCacheReplicationGroup.PrimaryEndPoint.Address
             - Name: REDIS_PORT
               Value: "6379"
             - Name: CLICKHOUSE_HOST
@@ -4567,7 +4606,7 @@ Resources:
                 Ref: AWS::Region
             - Name: REDIS_HOST
               Value:
-                Fn::GetAtt: ElastiCacheNode.RedisEndpoint.Address
+                Fn::GetAtt: ElastiCacheReplicationGroup.PrimaryEndPoint.Address
             - Name: REDIS_PORT
               Value: "6379"
             - Name: CLICKHOUSE_HOST
@@ -4787,7 +4826,7 @@ Resources:
                 Fn::Sub: http://${SnubaApiDnsRecord}
             - Name: REDIS_HOST
               Value:
-                Fn::GetAtt: ElastiCacheNode.RedisEndpoint.Address
+                Fn::GetAtt: ElastiCacheReplicationGroup.PrimaryEndPoint.Address
             - Name: REDIS_PORT
               Value: "6379"
             - Name: CLICKHOUSE_HOST
@@ -4954,7 +4993,7 @@ Resources:
                 Fn::Sub: http://${SnubaApiDnsRecord}
             - Name: REDIS_HOST
               Value:
-                Fn::GetAtt: ElastiCacheNode.RedisEndpoint.Address
+                Fn::GetAtt: ElastiCacheReplicationGroup.PrimaryEndPoint.Address
             - Name: REDIS_PORT
               Value: "6379"
             - Name: CLICKHOUSE_HOST
@@ -5113,7 +5152,7 @@ Resources:
                 Fn::Sub: http://${SnubaApiDnsRecord}
             - Name: REDIS_HOST
               Value:
-                Fn::GetAtt: ElastiCacheNode.RedisEndpoint.Address
+                Fn::GetAtt: ElastiCacheReplicationGroup.PrimaryEndPoint.Address
             - Name: REDIS_PORT
               Value: "6379"
             - Name: CLICKHOUSE_HOST
@@ -5221,7 +5260,7 @@ Resources:
                 Ref: AWS::Region
             - Name: REDIS_HOST
               Value:
-                Fn::GetAtt: ElastiCacheNode.RedisEndpoint.Address
+                Fn::GetAtt: ElastiCacheReplicationGroup.PrimaryEndPoint.Address
             - Name: REDIS_PORT
               Value: "6379"
             - Name: CLICKHOUSE_HOST
@@ -5338,7 +5377,7 @@ Resources:
                 Ref: AWS::Region
             - Name: REDIS_HOST
               Value:
-                Fn::GetAtt: ElastiCacheNode.RedisEndpoint.Address
+                Fn::GetAtt: ElastiCacheReplicationGroup.PrimaryEndPoint.Address
             - Name: REDIS_PORT
               Value: "6379"
             - Name: CLICKHOUSE_HOST
@@ -5511,7 +5550,7 @@ Resources:
                 Fn::Sub: http://${SnubaApiDnsRecord}
             - Name: REDIS_HOST
               Value:
-                Fn::GetAtt: ElastiCacheNode.RedisEndpoint.Address
+                Fn::GetAtt: ElastiCacheReplicationGroup.PrimaryEndPoint.Address
             - Name: REDIS_PORT
               Value: "6379"
             - Name: CLICKHOUSE_HOST
