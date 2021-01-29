@@ -1476,6 +1476,26 @@ Resources:
       MonitoringRoleArn:
         Fn::GetAtt: EnhancedMonitoringRole.Arn
 
+  RDSReplica:
+    Type: AWS::RDS::DBInstance
+    Properties: 
+      Engine: aurora-postgresql
+      AllowMajorVersionUpgrade: true
+      AutoMinorVersionUpgrade: true
+      DBSubnetGroupName:
+        Ref: RDSSubnetGroup
+      DBClusterIdentifier:
+        Ref: RDSCluster
+      DBInstanceClass:
+        Ref: PostgresDbInstanceClass
+      EnablePerformanceInsights: true
+      PerformanceInsightsRetentionPeriod: 7
+      MultiAZ: false                                   # VPC Multi-AZ DB Instances are not available for engine: aurora-postgresql
+      PubliclyAccessible: false
+      MonitoringInterval: 60
+      MonitoringRoleArn:
+        Fn::GetAtt: EnhancedMonitoringRole.Arn
+
   RDSAutoScaling:
     Type: AWS::ApplicationAutoScaling::ScalableTarget
     Properties:
