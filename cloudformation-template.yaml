@@ -177,7 +177,7 @@ Parameters:
   # OpsWorks ClickHouse variables
   ClickHouseCookbookUrl:
     Type: String
-    Default: https://github.com/Rungutan/sentry-fargate-cf-stack/releases/download/1.7.0/clickhouse-1.7.0.tar.gz
+    Default: https://github.com/Rungutan/sentry-fargate-cf-stack/releases/download/1.9.1/clickhouse-1.9.1.tar.gz
     
   ClickHouseInstanceType:
     Type: String
@@ -205,28 +205,28 @@ Parameters:
 
   SentryImage:
     Type: String
-    Default: public.ecr.aws/x7u7j5v7/sentry-base:1.7.0
-    Description: Public ECR = public.ecr.aws/x7u7j5v7/sentry-base:1.7.0 <AND> Docker HUB = rungutancommunity/sentry-base:1.7.0
+    Default: public.ecr.aws/x7u7j5v7/sentry-base:1.9.1
+    Description: Public ECR = public.ecr.aws/x7u7j5v7/sentry-base:1.9.1 <AND> Docker HUB = rungutancommunity/sentry-base:1.9.1
 
   SnubaImage:
     Type: String
-    Default: public.ecr.aws/x7u7j5v7/sentry-snuba:1.7.0
-    Description: Public ECR = public.ecr.aws/x7u7j5v7/sentry-snuba:1.7.0 <AND> Docker HUB = rungutancommunity/sentry-snuba:1.7.0
+    Default: public.ecr.aws/x7u7j5v7/sentry-snuba:1.9.1
+    Description: Public ECR = public.ecr.aws/x7u7j5v7/sentry-snuba:1.9.1 <AND> Docker HUB = rungutancommunity/sentry-snuba:1.9.1
 
   RelayImage:
     Type: String
-    Default: public.ecr.aws/x7u7j5v7/sentry-relay:1.7.0
-    Description: Public ECR = public.ecr.aws/x7u7j5v7/sentry-relay:1.7.0 <AND> Docker HUB = rungutancommunity/sentry-relay:1.7.0
+    Default: public.ecr.aws/x7u7j5v7/sentry-relay:1.9.1
+    Description: Public ECR = public.ecr.aws/x7u7j5v7/sentry-relay:1.9.1 <AND> Docker HUB = rungutancommunity/sentry-relay:1.9.1
 
   BashImage:
     Type: String
-    Default: public.ecr.aws/x7u7j5v7/bash:1.7.0
-    Description: Public ECR = public.ecr.aws/x7u7j5v7/bash:1.7.0 <AND> Docker HUB = rungutancommunity/bash:1.7.0
+    Default: public.ecr.aws/x7u7j5v7/bash:1.9.1
+    Description: Public ECR = public.ecr.aws/x7u7j5v7/bash:1.9.1 <AND> Docker HUB = rungutancommunity/bash:1.9.1
 
   ClickHouseImage:
     Type: String
-    Default: public.ecr.aws/x7u7j5v7/clickhouse-client:1.7.0
-    Description: Public ECR = public.ecr.aws/x7u7j5v7/clickhouse-client:1.7.0 <AND> Docker HUB = rungutancommunity/clickhouse-client:1.7.0
+    Default: public.ecr.aws/x7u7j5v7/clickhouse-client:1.9.1
+    Description: Public ECR = public.ecr.aws/x7u7j5v7/clickhouse-client:1.9.1 <AND> Docker HUB = rungutancommunity/clickhouse-client:1.9.1
 
   MinCountSnubaApi:
     Type: String
@@ -1234,6 +1234,7 @@ Resources:
             from datetime import datetime
 
             def lambda_handler(event, context):
+              # This comment was added to force an update on this function's code
               data = {}
 
               server_properties = f"""auto.create.topics.enable = {event['ResourceProperties']['auto_create_topics_enable']}
@@ -1683,6 +1684,7 @@ Resources:
             from datetime import datetime
 
             def lambda_handler(event, context):
+              # This comment was added to force an update on this function's code
               data = {}
 
               try:
@@ -5644,6 +5646,7 @@ Resources:
             import time
 
             def lambda_handler(event, context):
+              # This comment was added to force an update on this function's code
               data = {}
               wait_time = int(event['ResourceProperties']['TimeToWait']) if 'TimeToWait' in event['ResourceProperties'] else 120
 
@@ -5731,6 +5734,7 @@ Resources:
             from datetime import datetime
 
             def lambda_handler(event, context):
+              # This comment was added to force an update on this function's code
               data = {}
 
               try:
