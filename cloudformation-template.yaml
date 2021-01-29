@@ -1384,46 +1384,51 @@ Resources:
       ManagedPolicyArns:
       - arn:aws:iam::aws:policy/service-role/AmazonRDSEnhancedMonitoringRole
 
-  RDSInstance:
-    Type: AWS::RDS::DBInstance
+  RDSCluster:
+    Type: AWS::RDS::DBCluster
     Properties:
-      DBName:
+      BackupRetentionPeriod: 35
+      Port: 5432
+      DatabaseName:
         Ref: PostgresDbName
-      AllocatedStorage:
-        Ref: PostgresAllocatedStorage
-      MaxAllocatedStorage:
-        Ref: PostgresMaxAllocatedStorage
-      DBInstanceClass:
-        Ref: PostgresDbInstanceClass
-      Engine: postgres
-      EngineVersion: '12.4'
-      MasterUsername:
+      MasterUsername: 
         Ref: PostgresDbUsername
-      MasterUserPassword:
+      MasterUserPassword: 
         Ref: PostgresDbPassword
+      Engine: aurora-postgresql
+      EngineMode: 'provisioned'
+      EngineVersion: '12.4'
       DBSubnetGroupName:
         Ref: RDSSubnetGroup
-      VPCSecurityGroups:
+      VpcSecurityGroupIds:
         - Fn::GetAtt: Ec2SecurityGroup.GroupId
-      MultiAZ: false
-      PubliclyAccessible: false
-      StorageType: gp2
-      AutoMinorVersionUpgrade: true
-      AllowMajorVersionUpgrade: true
-      BackupRetentionPeriod: 1
-      CopyTagsToSnapshot: true
-      EnablePerformanceInsights: true
-      StorageEncrypted: true
       KmsKeyId:
         Fn::GetAtt: RdsKmsKey.Arn
+      StorageEncrypted: true
+      EnableHttpEndpoint: true
       EnableCloudwatchLogsExports:
         - "postgresql"
         - "upgrade"
+
+  RDSInstance:
+    Type: AWS::RDS::DBInstance
+    Properties: 
+      Engine: aurora-postgresql
+      AllowMajorVersionUpgrade: true
+      AutoMinorVersionUpgrade: true
+      DBSubnetGroupName:
+        Ref: RDSSubnetGroup
+      DBClusterIdentifier:
+        Ref: RDSCluster
+      DBInstanceClass:
+        Ref: DBInstanceClass
+      EnablePerformanceInsights: true
+      PerformanceInsightsRetentionPeriod: 7
+      MultiAZ: true
+      PubliclyAccessible: false
       MonitoringInterval: 60
       MonitoringRoleArn:
         Fn::GetAtt: EnhancedMonitoringRole.Arn
-      PerformanceInsightsRetentionPeriod: 7
-      Port: "5432"
 
   ElastiCacheSubnetGroup:
     Type: AWS::ElastiCache::SubnetGroup
