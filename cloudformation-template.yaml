@@ -113,14 +113,6 @@ Parameters:
     NoEcho: true
     Default: "Sentry123!"
 
-  PostgresAllocatedStorage:
-    Type: String
-    Default: "20"
-
-  PostgresMaxAllocatedStorage:
-    Type: String
-    Default: "1000"
-
   PostgresDbInstanceClass:
     Type: String
     Default: db.t3.medium
@@ -460,8 +452,6 @@ Metadata:
           - PostgresDbName
           - PostgresDbUsername
           - PostgresDbPassword
-          - PostgresAllocatedStorage
-          - PostgresMaxAllocatedStorage
           - PostgresDbInstanceClass
           - PostgresMinReadReplicas
           - PostgresMaxReadReplicas
@@ -1376,6 +1366,34 @@ Resources:
           NodeExporter:
             EnabledInBroker: True
 
+  KafkaAutoScaling:
+    Type: AWS::ApplicationAutoScaling::ScalableTarget
+    Properties:
+      MaxCapacity: "16384"   # Maximum size MUST be greater than initial size. There is no reason to not hardcode it to max value.
+      MinCapacity: "1"       # Minimum size cannot be greater than 1
+      ResourceId:
+        Ref: KafkaCluster
+      RoleARN:
+        Fn::GetAtt: ScalingRole.Arn
+      ScalableDimension: kafka:broker-storage:VolumeSize
+      ServiceNamespace: kafka
+
+  BrokerVolumeAutoScalingPolicyKafka:
+    Type: AWS::ApplicationAutoScaling::ScalingPolicy
+    Properties:
+      PolicyName:
+        Fn::Sub: ${AWS::StackName}-BrokerVolume-Kafka
+      PolicyType: TargetTrackingScaling
+      ScalingTargetId:
+        Ref: KafkaAutoScaling
+      TargetTrackingScalingPolicyConfiguration:
+        DisableScaleIn: true
+        TargetValue: 80 
+        ScaleInCooldown: 600
+        ScaleOutCooldown: 60
+        PredefinedMetricSpecification: 
+          PredefinedMetricType: KafkaBrokerStorageUtilization
+
   RDSSubnetGroup:
     Type: AWS::RDS::DBSubnetGroup
     Properties: 
@@ -2144,6 +2162,16 @@ Resources:
                 - rds:DeleteDBInstance
                 - rds:DescribeDBClusters
                 - rds:DescribeDBInstance
+              Resource: "*"
+      - PolicyName: ScalingPolicyKafka
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action:
+                - kafka:DescribeCluster
+                - kafka:DescribeClusterOperation
+                - kafka:UpdateBrokerStorage
               Resource: "*"
 
   ExecutionRole:
