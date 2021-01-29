@@ -271,6 +271,17 @@ Also, I cannot stress this enough, but **PLEASE, PLEASE, FOR THE LOVE OF ALL THA
 - InitialAdminUserPassword
 
 
+### Migrationg from any version before 1.10.0 to 1.10.0 (or newer)
+
+In version 1.10.0 the database engine has changed from AWS RDS (Native) PostgreSQL to AWS RDS Aurora PostgreSQL.
+
+In order to correctly perform the migration, you would have to:
+
+  * Make a database backup (see [utilities/dump.sh](utilities/dump.sh) script)
+  * Run the CloudFormation stack update
+  * Import the database dump (see [utilities/import.sh](utilities/import.sh) script)
+
+
 ## Final thoughts
 
 Performance Testing and Performance Monitoring ho hand in hand and none of them must be missing from the toolchain of any good DevOps, Developer or QA.
