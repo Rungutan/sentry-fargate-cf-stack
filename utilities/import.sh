@@ -29,7 +29,7 @@ echo
 echo
 echo "<< Dropping target database (if exists) and recreating it >>"
 echo "Input target PASSWORD: "
-psql  --host=$hostname --port=$port --username=$username --dbname=$database_name --password << EOF
+psql  --host=$hostname --port=$port --username=$username --dbname=postgres --password << EOF
 SELECT 
     pg_terminate_backend(pid) 
 FROM 
