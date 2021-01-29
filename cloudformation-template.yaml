@@ -123,17 +123,10 @@ Parameters:
 
   PostgresDbInstanceClass:
     Type: String
-    Default: db.t2.medium
+    Default: db.t3.medium
     AllowedValues:
-    - db.t2.small
-    - db.t2.medium
-    - db.t3.small
     - db.t3.medium
-    - db.r3.large
-    - db.r3.xlarge
-    - db.r3.2xlarge
-    - db.r3.4xlarge
-    - db.r3.8xlarge
+    - db.t3.large
     - db.r4.large
     - db.r4.xlarge
     - db.r4.2xlarge
@@ -145,16 +138,15 @@ Parameters:
     - db.r5.2xlarge
     - db.r5.4xlarge
     - db.r5.12xlarge
-    - db.m5.large
-    - db.m5.xlarge
-    - db.m5.2xlarge
-    - db.m5.4xlarge
-    - db.m5.12xlarge
-    - db.m4.large
-    - db.m4.xlarge
-    - db.m4.2xlarge
-    - db.m4.4xlarge
-    - db.m4.10xlarge
+    - db.r5.24xlarge
+
+  PostgresMinReadReplicas:
+    Type: Number
+    Default: 1
+
+  PostgresMaxReadReplicas:
+    Type: Number
+    Default: 10
 
   # ElastiCache Redis variables
   ElastiCacheInstanceClass:
@@ -471,6 +463,8 @@ Metadata:
           - PostgresAllocatedStorage
           - PostgresMaxAllocatedStorage
           - PostgresDbInstanceClass
+          - PostgresMinReadReplicas
+          - PostgresMaxReadReplicas
 
       - Label:
           default: ElastiCache Redis variables
@@ -547,6 +541,41 @@ Metadata:
           - SentryEmailFrom
           - SentryEmailUseTls
           - SentryEmailUseSsl
+
+Mappings:
+
+
+  # Mappings created based on https://docs.aws.amazon.com/AmazonRDS/latest/AuroraUserGuide/AuroraPostgreSQL.Managing.html#AuroraPostgreSQL.Managing.MaxConnections
+
+  RDSConnections:   
+    db.t3.medium:
+      ScaleValue: 210
+    db.t3.large:
+      ScaleValue: 400
+    db.r4.large:
+      ScaleValue: 800
+    db.r4.xlarge:
+      ScaleValue: 1600
+    db.r4.2xlarge:
+      ScaleValue: 2500
+    db.r4.4xlarge:
+      ScaleValue: 2500
+    db.r4.8xlarge:
+      ScaleValue: 2500
+    db.r4.16xlarge:
+      ScaleValue: 2500
+    db.r5.large:
+      ScaleValue: 800
+    db.r5.xlarge:
+      ScaleValue: 1650
+    db.r5.2xlarge:
+      ScaleValue: 2500
+    db.r5.4xlarge:
+      ScaleValue: 2500
+    db.r5.12xlarge:
+      ScaleValue: 2500
+    db.r5.12xlarge:
+      ScaleValue: 2500
 
 Resources:
 
@@ -1408,7 +1437,6 @@ Resources:
       EnableHttpEndpoint: true
       EnableCloudwatchLogsExports:
         - "postgresql"
-        - "upgrade"
 
   RDSInstance:
     Type: AWS::RDS::DBInstance
@@ -1421,14 +1449,64 @@ Resources:
       DBClusterIdentifier:
         Ref: RDSCluster
       DBInstanceClass:
-        Ref: DBInstanceClass
+        Ref: PostgresDbInstanceClass
       EnablePerformanceInsights: true
       PerformanceInsightsRetentionPeriod: 7
-      MultiAZ: true
+      MultiAZ: false                                   # VPC Multi-AZ DB Instances are not available for engine: aurora-postgresql
       PubliclyAccessible: false
       MonitoringInterval: 60
       MonitoringRoleArn:
         Fn::GetAtt: EnhancedMonitoringRole.Arn
+
+  RDSAutoScaling:
+    Type: AWS::ApplicationAutoScaling::ScalableTarget
+    Properties:
+      MaxCapacity:
+        Ref: PostgresMaxReadReplicas
+      MinCapacity:
+        Ref: PostgresMinReadReplicas
+      ResourceId:
+        Fn::Sub: cluster:${RDSCluster}
+      RoleARN:
+        Fn::GetAtt: ScalingRole.Arn
+      ScalableDimension: rds:cluster:ReadReplicaCount
+      ServiceNamespace: rds
+
+  CpuAutoScalingPolicyRds:
+    Type: AWS::ApplicationAutoScaling::ScalingPolicy
+    Properties:
+      PolicyName:
+        Fn::Sub: ${AWS::StackName}-CPU-RDS
+      PolicyType: TargetTrackingScaling
+      ScalingTargetId:
+        Ref: RDSAutoScaling
+      TargetTrackingScalingPolicyConfiguration:
+        DisableScaleIn: false
+        TargetValue: 40 
+        ScaleInCooldown: 600
+        ScaleOutCooldown: 60
+        PredefinedMetricSpecification: 
+          PredefinedMetricType: RDSReaderAverageCPUUtilization
+
+  ConnectionsAutoScalingPolicyRds:
+    Type: AWS::ApplicationAutoScaling::ScalingPolicy
+    Properties:
+      PolicyName:
+        Fn::Sub: ${AWS::StackName}-Connections-RDS
+      PolicyType: TargetTrackingScaling
+      ScalingTargetId:
+        Ref: RDSAutoScaling
+      TargetTrackingScalingPolicyConfiguration:
+        DisableScaleIn: false
+        TargetValue:
+          Fn::FindInMap:
+            - RDSConnections
+            - Ref: PostgresDbInstanceClass
+            - ScaleValue
+        ScaleInCooldown: 600
+        ScaleOutCooldown: 60
+        PredefinedMetricSpecification: 
+          PredefinedMetricType: RDSReaderAverageDatabaseConnections
 
   ElastiCacheSubnetGroup:
     Type: AWS::ElastiCache::SubnetGroup
@@ -2032,7 +2110,19 @@ Resources:
             Service: application-autoscaling.amazonaws.com
           Action: 'sts:AssumeRole'
       Policies:
-      - PolicyName: ScalingPolicy
+      - PolicyName: CloudWatchManagement
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action:
+                - cloudwatch:PutMetricAlarm
+                - cloudwatch:DescribeAlarms
+                - cloudwatch:GetMetricStatistics
+                - cloudwatch:SetAlarmState
+                - cloudwatch:DeleteAlarms
+              Resource: "*"
+      - PolicyName: ScalingPolicyEcs
         PolicyDocument:
           Version: '2012-10-17'
           Statement:
@@ -2042,11 +2132,18 @@ Resources:
                 - ecs:RunTask
                 - ecs:UpdateSerice
                 - ecs:DescribeServices
-                - cloudwatch:PutMetricAlarm
-                - cloudwatch:DescribeAlarms
-                - cloudwatch:GetMetricStatistics
-                - cloudwatch:SetAlarmState
-                - cloudwatch:DeleteAlarms
+              Resource: "*"
+      - PolicyName: ScalingPolicyRds
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action:
+                - rds:AddTagsToResource
+                - rds:CreateDBInstance
+                - rds:DeleteDBInstance
+                - rds:DescribeDBClusters
+                - rds:DescribeDBInstance
               Resource: "*"
 
   ExecutionRole:
@@ -2176,7 +2273,7 @@ Resources:
                 Fn::GetAtt: KafkaGetBrokersLambdaResult.BootstrapBrokerString
             - Name: POSTGRES_HOST
               Value:
-                Fn::GetAtt: RDSInstance.Endpoint.Address
+                Fn::GetAtt: RDSCluster.Endpoint.Address
             - Name: POSTGRES_PORT
               Value: "5432"
             - Name: POSTGRES_DB
@@ -2443,7 +2540,7 @@ Resources:
                 Fn::GetAtt: KafkaGetBrokersLambdaResult.KafkaBroker3
             - Name: POSTGRES_HOST
               Value:
-                Fn::GetAtt: RDSInstance.Endpoint.Address
+                Fn::GetAtt: RDSCluster.Endpoint.Address
             - Name: POSTGRES_PORT
               Value: "5432"
             - Name: POSTGRES_DB
@@ -2707,7 +2804,7 @@ Resources:
                 Fn::GetAtt: KafkaGetBrokersLambdaResult.KafkaBroker3
             - Name: POSTGRES_HOST
               Value:
-                Fn::GetAtt: RDSInstance.Endpoint.Address
+                Fn::GetAtt: RDSCluster.Endpoint.Address
             - Name: POSTGRES_PORT
               Value: "5432"
             - Name: POSTGRES_DB
@@ -3001,7 +3098,7 @@ Resources:
                 Fn::GetAtt: KafkaGetBrokersLambdaResult.KafkaBroker3
             - Name: POSTGRES_HOST
               Value:
-                Fn::GetAtt: RDSInstance.Endpoint.Address
+                Fn::GetAtt: RDSCluster.Endpoint.Address
             - Name: POSTGRES_PORT
               Value: "5432"
             - Name: POSTGRES_DB
@@ -3168,7 +3265,7 @@ Resources:
                 Fn::GetAtt: KafkaGetBrokersLambdaResult.KafkaBroker3
             - Name: POSTGRES_HOST
               Value:
-                Fn::GetAtt: RDSInstance.Endpoint.Address
+                Fn::GetAtt: RDSCluster.Endpoint.Address
             - Name: POSTGRES_PORT
               Value: "5432"
             - Name: POSTGRES_DB
@@ -3381,7 +3478,7 @@ Resources:
                 Fn::GetAtt: KafkaGetBrokersLambdaResult.KafkaBroker3
             - Name: POSTGRES_HOST
               Value:
-                Fn::GetAtt: RDSInstance.Endpoint.Address
+                Fn::GetAtt: RDSCluster.Endpoint.Address
             - Name: POSTGRES_PORT
               Value: "5432"
             - Name: POSTGRES_DB
@@ -3594,7 +3691,7 @@ Resources:
                 Fn::GetAtt: KafkaGetBrokersLambdaResult.KafkaBroker3
             - Name: POSTGRES_HOST
               Value:
-                Fn::GetAtt: RDSInstance.Endpoint.Address
+                Fn::GetAtt: RDSCluster.Endpoint.Address
             - Name: POSTGRES_PORT
               Value: "5432"
             - Name: POSTGRES_DB
@@ -3807,7 +3904,7 @@ Resources:
                 Fn::GetAtt: KafkaGetBrokersLambdaResult.KafkaBroker3
             - Name: POSTGRES_HOST
               Value:
-                Fn::GetAtt: RDSInstance.Endpoint.Address
+                Fn::GetAtt: RDSCluster.Endpoint.Address
             - Name: POSTGRES_PORT
               Value: "5432"
             - Name: POSTGRES_DB
@@ -3973,7 +4070,7 @@ Resources:
                 Fn::GetAtt: KafkaGetBrokersLambdaResult.BootstrapBrokerString
             - Name: POSTGRES_HOST
               Value:
-                Fn::GetAtt: RDSInstance.Endpoint.Address
+                Fn::GetAtt: RDSCluster.Endpoint.Address
             - Name: POSTGRES_PORT
               Value: "5432"
             - Name: POSTGRES_DB
@@ -4139,7 +4236,7 @@ Resources:
                 Fn::GetAtt: KafkaGetBrokersLambdaResult.BootstrapBrokerString
             - Name: POSTGRES_HOST
               Value:
-                Fn::GetAtt: RDSInstance.Endpoint.Address
+                Fn::GetAtt: RDSCluster.Endpoint.Address
             - Name: POSTGRES_PORT
               Value: "5432"
             - Name: POSTGRES_DB
@@ -4305,7 +4402,7 @@ Resources:
                 Fn::GetAtt: KafkaGetBrokersLambdaResult.BootstrapBrokerString
             - Name: POSTGRES_HOST
               Value:
-                Fn::GetAtt: RDSInstance.Endpoint.Address
+                Fn::GetAtt: RDSCluster.Endpoint.Address
             - Name: POSTGRES_PORT
               Value: "5432"
             - Name: POSTGRES_DB
@@ -4471,7 +4568,7 @@ Resources:
                 Fn::GetAtt: KafkaGetBrokersLambdaResult.BootstrapBrokerString
             - Name: POSTGRES_HOST
               Value:
-                Fn::GetAtt: RDSInstance.Endpoint.Address
+                Fn::GetAtt: RDSCluster.Endpoint.Address
             - Name: POSTGRES_PORT
               Value: "5432"
             - Name: POSTGRES_DB
@@ -4638,7 +4735,7 @@ Resources:
                 Fn::GetAtt: KafkaGetBrokersLambdaResult.BootstrapBrokerString
             - Name: POSTGRES_HOST
               Value:
-                Fn::GetAtt: RDSInstance.Endpoint.Address
+                Fn::GetAtt: RDSCluster.Endpoint.Address
             - Name: POSTGRES_PORT
               Value: "5432"
             - Name: POSTGRES_DB
@@ -4847,7 +4944,7 @@ Resources:
                 Fn::GetAtt: KafkaGetBrokersLambdaResult.KafkaBroker3
             - Name: POSTGRES_HOST
               Value:
-                Fn::GetAtt: RDSInstance.Endpoint.Address
+                Fn::GetAtt: RDSCluster.Endpoint.Address
             - Name: POSTGRES_PORT
               Value: "5432"
             - Name: POSTGRES_DB
@@ -5014,7 +5111,7 @@ Resources:
                 Fn::GetAtt: KafkaGetBrokersLambdaResult.KafkaBroker3
             - Name: POSTGRES_HOST
               Value:
-                Fn::GetAtt: RDSInstance.Endpoint.Address
+                Fn::GetAtt: RDSCluster.Endpoint.Address
             - Name: POSTGRES_PORT
               Value: "5432"
             - Name: POSTGRES_DB
@@ -5173,7 +5270,7 @@ Resources:
                 Fn::GetAtt: KafkaGetBrokersLambdaResult.KafkaBroker3
             - Name: POSTGRES_HOST
               Value:
-                Fn::GetAtt: RDSInstance.Endpoint.Address
+                Fn::GetAtt: RDSCluster.Endpoint.Address
             - Name: POSTGRES_PORT
               Value: "5432"
             - Name: POSTGRES_DB
@@ -5292,7 +5389,7 @@ Resources:
                 Fn::GetAtt: KafkaGetBrokersLambdaResult.BootstrapBrokerString
             - Name: POSTGRES_HOST
               Value:
-                Fn::GetAtt: RDSInstance.Endpoint.Address
+                Fn::GetAtt: RDSCluster.Endpoint.Address
             - Name: POSTGRES_PORT
               Value: "5432"
             - Name: POSTGRES_DB
@@ -5409,7 +5506,7 @@ Resources:
                 Fn::GetAtt: KafkaGetBrokersLambdaResult.BootstrapBrokerString
             - Name: POSTGRES_HOST
               Value:
-                Fn::GetAtt: RDSInstance.Endpoint.Address
+                Fn::GetAtt: RDSCluster.Endpoint.Address
             - Name: POSTGRES_PORT
               Value: "5432"
             - Name: POSTGRES_DB
@@ -5571,7 +5668,7 @@ Resources:
                 Fn::GetAtt: KafkaGetBrokersLambdaResult.KafkaBroker3
             - Name: POSTGRES_HOST
               Value:
-                Fn::GetAtt: RDSInstance.Endpoint.Address
+                Fn::GetAtt: RDSCluster.Endpoint.Address
             - Name: POSTGRES_PORT
               Value: "5432"
             - Name: POSTGRES_DB
