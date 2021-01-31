@@ -277,9 +277,15 @@ In version 1.10.0 the database engine has changed from AWS RDS (Native) PostgreS
 
 In order to correctly perform the migration, you would have to:
 
+  * Create a bastion host in the desired VPC public subnet. Make sure to use a instance type with enough CPU/Mem/Network bandwidth because the dump can be quite huge on large instances.
+  * The bastion host's security group needs to be added to the `Ec2SecurityGroup` as allowed inbound traffic
+  * Login to this bastion host. Make sure that `pgsql` and `pv` are installed. 
+    * See [https://techviewleo.com/install-postgresql-12-on-amazon-linux/](here) how to install pgsql 12 on Amazon Linux 2
+    * To install `pv` you have to [https://aws.amazon.com/de/premiumsupport/knowledge-center/ec2-enable-epel/](enable the EPEL) repository.
   * Make a database backup (see [utilities/dump.sh](utilities/dump.sh) script)
   * Run the CloudFormation stack update
   * Import the database dump (see [utilities/import.sh](utilities/import.sh) script)
+  * Destroy the bastion host and clean up the security group.
 
 
 ## Final thoughts
