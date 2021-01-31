@@ -40,15 +40,15 @@ WHERE
     -- don't kill the connections to other databases
     AND datname = '${database_name}';
 
-drop database IF EXISTS '${database_name}';
-create database '${database_name}';
+DROP DATABASE IF EXISTS "${database_name}";
+CREATE DATABASE "${database_name}";
 EOF
 
 echo
 echo
 echo "<< Importing data into database >>"
 echo "Input target PASSWORD: "
-psql  --host=$hostname --port=$port --username=$username --dbname=$database_name --file=backup.sql --password
+pv backup.sql | psql  --host=$hostname --port=$port --username=$username --dbname=$database_name --password
 
 echo
 echo
