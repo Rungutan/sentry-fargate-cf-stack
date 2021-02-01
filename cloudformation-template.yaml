@@ -5484,9 +5484,9 @@ Resources:
         Fn::GetAtt: ContainerSingleExecutionLambdaFunction.Arn
       TaskDefinitionArn:
         Fn::GetAtt: TaskDefinitionSnubaBootstrap.TaskDefinitionArn
-      RerunOnUpdate: "NO"
-      Image:
-        Ref: SnubaImage
+      RerunOnUpdate: "YES"
+      ClusterArn:
+        Ref: KafkaCluster
 
   DelaySnubaBootstrapLambdaResult:
     Type: Custom::DelaySnubaBootstrap
@@ -5599,9 +5599,11 @@ Resources:
     Properties:
       ServiceToken:
         Fn::GetAtt: ContainerSingleExecutionLambdaFunction.Arn
+      RerunOnUpdate: "YES"
       TaskDefinitionArn:
         Fn::GetAtt: TaskDefinitionSnubaMigrations.TaskDefinitionArn
-      RerunOnUpdate: "YES"
+      ClusterArn:
+        Ref: KafkaCluster
 
   DelaySnubaMigrationsLambdaResult:
     Type: Custom::DelaySnubaMigrations
