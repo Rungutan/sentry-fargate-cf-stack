@@ -5484,9 +5484,9 @@ Resources:
         Fn::GetAtt: ContainerSingleExecutionLambdaFunction.Arn
       TaskDefinitionArn:
         Fn::GetAtt: TaskDefinitionSnubaBootstrap.TaskDefinitionArn
-      RerunOnUpdate: "NO"
-      Image:
-        Ref: SnubaImage
+      RerunOnUpdate: "YES"
+      ClusterArn:
+        Ref: KafkaCluster
 
   DelaySnubaBootstrapLambdaResult:
     Type: Custom::DelaySnubaBootstrap
