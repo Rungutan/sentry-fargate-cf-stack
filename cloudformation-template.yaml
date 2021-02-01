@@ -5599,9 +5599,11 @@ Resources:
     Properties:
       ServiceToken:
         Fn::GetAtt: ContainerSingleExecutionLambdaFunction.Arn
+      RerunOnUpdate: "YES"
       TaskDefinitionArn:
         Fn::GetAtt: TaskDefinitionSnubaMigrations.TaskDefinitionArn
-      RerunOnUpdate: "YES"
+      ClusterArn:
+        Ref: KafkaCluster
 
   DelaySnubaMigrationsLambdaResult:
     Type: Custom::DelaySnubaMigrations
