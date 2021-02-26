@@ -38,7 +38,7 @@ jobs:
           push: true
           tags: |
             rungutancommunity/sentry-base:latest
-            public.ecr.aws/x7u7j5v7/sentry-base:latest
+            public.ecr.aws/rungutancommunity/sentry-base:latest
   sentry-relay:
     runs-on: ubuntu-latest
     steps:
@@ -72,7 +72,7 @@ jobs:
           push: true
           tags: |
             rungutancommunity/sentry-relay:latest
-            public.ecr.aws/x7u7j5v7/sentry-relay:latest
+            public.ecr.aws/rungutancommunity/sentry-relay:latest
   sentry-snuba:
     runs-on: ubuntu-latest
     steps:
@@ -106,7 +106,7 @@ jobs:
           push: true
           tags: |
             rungutancommunity/sentry-snuba:latest
-            public.ecr.aws/x7u7j5v7/sentry-snuba:latest
+            public.ecr.aws/rungutancommunity/sentry-snuba:latest
   bash:
     runs-on: ubuntu-latest
     steps:
@@ -140,7 +140,41 @@ jobs:
           push: true
           tags: |
             rungutancommunity/bash:latest
-            public.ecr.aws/x7u7j5v7/bash:latest
+            public.ecr.aws/rungutancommunity/bash:latest
+  geoipupdate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v1
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1
+        with:
+          buildkitd-flags: --debug
+      - name: Login to Docker Hub
+        uses: docker/login-action@v1
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Login to ECR
+        uses: docker/login-action@v1
+        with:
+          registry: public.ecr.aws
+          username: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          password: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        env:
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+      - name: Build and push GeoIpUpdate image
+        id: docker_build_geoipupdate
+        uses: docker/build-push-action@v2
+        with:
+          context: docker/geoipupdate/
+          file: docker/geoipupdate/Dockerfile
+          push: true
+          tags: |
+            rungutancommunity/geoipupdate:latest
+            public.ecr.aws/rungutancommunity/geoipupdate:latest
   clickhouse-client:
     runs-on: ubuntu-latest
     steps:
@@ -174,6 +208,6 @@ jobs:
           push: true
           tags: |
             rungutancommunity/clickhouse-client:latest
-            public.ecr.aws/x7u7j5v7/clickhouse-client:latest
+            public.ecr.aws/rungutancommunity/clickhouse-client:latest
 
 

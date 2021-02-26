@@ -1,0 +1,1 @@
+FROM	maxmindinc/geoipupdate:latest
