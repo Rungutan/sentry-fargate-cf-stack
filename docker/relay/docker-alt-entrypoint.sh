@@ -12,6 +12,7 @@ fi
 # If tmp config folder found, copy file from there to work folder
 mkdir -p /work/.relay/ && chown -R relay:relay /work
 (cp ${CONFIG_FILE_PATH} /work/.relay/config.yml) || true
+(cp ${GEOIPUPDATE_FILE_PATH} /geoip/GeoLite2-City.mmdb) || true
 
 # For compatibility with older images
 if [ "$1" == "bash" ]; then

@@ -6,3 +6,4 @@ RUN  apt-get update && \
 
 COPY sentry.conf.py /etc/sentry/sentry.conf.py
 
+RUN  mkdir -p /geoip/

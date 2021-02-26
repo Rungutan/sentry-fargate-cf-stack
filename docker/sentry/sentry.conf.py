@@ -203,6 +203,14 @@ SENTRY_WEB_OPTIONS = {
 
 # End of SSL/TLS settings
 
+#######################
+# MaxMind Integration #
+#######################
+
+
+GEOIP_PATH_MMDB = '/geoip/GeoLite2-City.mmdb'
+
+
 ############
 # Features #
 ############
