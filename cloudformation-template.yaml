@@ -2364,7 +2364,8 @@ Resources:
     Type: AWS::ECS::Service
     DependsOn:
       - ListenerHTTPSDefault
-    Properties: 
+    Properties:
+      PlatformVersion: '1.4.0'
       Cluster:
         Ref: ClusterWeb
       TaskDefinition:
@@ -2631,7 +2632,8 @@ Resources:
     Type: AWS::ECS::Service
     DependsOn:
       - ListenerHTTPSDefault
-    Properties: 
+    Properties:
+      PlatformVersion: '1.4.0'
       Cluster:
         Ref: ClusterWeb
       TaskDefinition:
@@ -2895,7 +2897,8 @@ Resources:
     Type: AWS::ECS::Service
     DependsOn:
       - ListenerHTTPSDefault
-    Properties: 
+    Properties:
+      PlatformVersion: '1.4.0'
       Cluster:
         Ref: ClusterWeb
       TaskDefinition:
@@ -3187,7 +3190,8 @@ Resources:
 
   ServiceSentryCron:
     Type: AWS::ECS::Service
-    Properties: 
+    Properties:
+      PlatformVersion: '1.4.0'
       Cluster:
         Ref: ClusterWorkers
       TaskDefinition:
@@ -3354,7 +3358,8 @@ Resources:
 
   ServiceSentryIngestAttachments:
     Type: AWS::ECS::Service
-    Properties: 
+    Properties:
+      PlatformVersion: '1.4.0'
       Cluster:
         Ref: ClusterWorkers
       TaskDefinition:
@@ -3567,7 +3572,8 @@ Resources:
 
   ServiceSentryIngestEvents:
     Type: AWS::ECS::Service
-    Properties: 
+    Properties:
+      PlatformVersion: '1.4.0'
       Cluster:
         Ref: ClusterWorkers
       TaskDefinition:
@@ -3780,7 +3786,8 @@ Resources:
 
   ServiceSentryIngestTransactions:
     Type: AWS::ECS::Service
-    Properties: 
+    Properties:
+      PlatformVersion: '1.4.0'
       Cluster:
         Ref: ClusterWorkers
       TaskDefinition:
@@ -3993,7 +4000,8 @@ Resources:
 
   ServiceSentryPostProcessForward:
     Type: AWS::ECS::Service
-    Properties: 
+    Properties:
+      PlatformVersion: '1.4.0'
       Cluster:
         Ref: ClusterWorkers
       TaskDefinition:
@@ -4159,7 +4167,8 @@ Resources:
 
   ServiceSnubaSessionsConsumer:
     Type: AWS::ECS::Service
-    Properties: 
+    Properties:
+      PlatformVersion: '1.4.0'
       Cluster:
         Ref: ClusterWorkers
       TaskDefinition:
@@ -4325,7 +4334,8 @@ Resources:
 
   ServiceSnubaEventsConsumer:
     Type: AWS::ECS::Service
-    Properties: 
+    Properties:
+      PlatformVersion: '1.4.0'
       Cluster:
         Ref: ClusterWorkers
       TaskDefinition:
@@ -4491,7 +4501,8 @@ Resources:
 
   ServiceSnubaOutcomesConsumer:
     Type: AWS::ECS::Service
-    Properties: 
+    Properties:
+      PlatformVersion: '1.4.0'
       Cluster:
         Ref: ClusterWorkers
       TaskDefinition:
@@ -4657,7 +4668,8 @@ Resources:
 
   ServiceSnubaTransactionsConsumer:
     Type: AWS::ECS::Service
-    Properties: 
+    Properties:
+      PlatformVersion: '1.4.0'
       Cluster:
         Ref: ClusterWorkers
       TaskDefinition:
@@ -4824,7 +4836,8 @@ Resources:
 
   ServiceSnubaEventsReplacer:
     Type: AWS::ECS::Service
-    Properties: 
+    Properties:
+      PlatformVersion: '1.4.0'
       Cluster:
         Ref: ClusterWorkers
       TaskDefinition:
@@ -5033,7 +5046,8 @@ Resources:
 
   ServiceSentryWorkers:
     Type: AWS::ECS::Service
-    Properties: 
+    Properties:
+      PlatformVersion: '1.4.0'
       Cluster:
         Ref: ClusterWorkers
       TaskDefinition:
