@@ -175,7 +175,7 @@ Parameters:
   # OpsWorks ClickHouse variables
   ClickHouseCookbookUrl:
     Type: String
-    Default: https://github.com/Rungutan/sentry-fargate-cf-stack/releases/download/1.11.4/clickhouse-1.11.4.tar.gz
+    Default: https://github.com/Rungutan/sentry-fargate-cf-stack/releases/download/1.12.0/clickhouse-1.12.0.tar.gz
     
   ClickHouseInstanceType:
     Type: String
@@ -203,33 +203,33 @@ Parameters:
 
   SentryImage:
     Type: String
-    Default: public.ecr.aws/rungutancommunity/sentry-base:1.11.4
-    Description: Public ECR = public.ecr.aws/rungutancommunity/sentry-base:1.11.4 <AND> Docker HUB = rungutancommunity/sentry-base:1.11.4
+    Default: public.ecr.aws/rungutancommunity/sentry-base:1.12.0
+    Description: Public ECR = public.ecr.aws/rungutancommunity/sentry-base:1.12.0 <AND> Docker HUB = rungutancommunity/sentry-base:1.12.0
 
   SnubaImage:
     Type: String
-    Default: public.ecr.aws/rungutancommunity/sentry-snuba:1.11.4
-    Description: Public ECR = public.ecr.aws/rungutancommunity/sentry-snuba:1.11.4 <AND> Docker HUB = rungutancommunity/sentry-snuba:1.11.4
+    Default: public.ecr.aws/rungutancommunity/sentry-snuba:1.12.0
+    Description: Public ECR = public.ecr.aws/rungutancommunity/sentry-snuba:1.12.0 <AND> Docker HUB = rungutancommunity/sentry-snuba:1.12.0
 
   RelayImage:
     Type: String
-    Default: public.ecr.aws/rungutancommunity/sentry-relay:1.11.4
-    Description: Public ECR = public.ecr.aws/rungutancommunity/sentry-relay:1.11.4 <AND> Docker HUB = rungutancommunity/sentry-relay:1.11.4
+    Default: public.ecr.aws/rungutancommunity/sentry-relay:1.12.0
+    Description: Public ECR = public.ecr.aws/rungutancommunity/sentry-relay:1.12.0 <AND> Docker HUB = rungutancommunity/sentry-relay:1.12.0
 
   BashImage:
     Type: String
-    Default: public.ecr.aws/rungutancommunity/bash:1.11.4
-    Description: Public ECR = public.ecr.aws/rungutancommunity/bash:1.11.4 <AND> Docker HUB = rungutancommunity/bash:1.11.4
+    Default: public.ecr.aws/rungutancommunity/bash:1.12.0
+    Description: Public ECR = public.ecr.aws/rungutancommunity/bash:1.12.0 <AND> Docker HUB = rungutancommunity/bash:1.12.0
 
   ClickHouseImage:
     Type: String
-    Default: public.ecr.aws/rungutancommunity/clickhouse-client:1.11.4
-    Description: Public ECR = public.ecr.aws/rungutancommunity/clickhouse-client:1.11.4 <AND> Docker HUB = rungutancommunity/clickhouse-client:1.11.4
+    Default: public.ecr.aws/rungutancommunity/clickhouse-client:1.12.0
+    Description: Public ECR = public.ecr.aws/rungutancommunity/clickhouse-client:1.12.0 <AND> Docker HUB = rungutancommunity/clickhouse-client:1.12.0
 
   GeoIpUpdateImage:
     Type: String
-    Default: public.ecr.aws/rungutancommunity/geoipupdate:1.11.4
-    Description: Public ECR = public.ecr.aws/rungutancommunity/geoipupdate:1.11.4 <AND>  Docker HUB = rungutancommunity/geoipupdate:1.11.4
+    Default: public.ecr.aws/rungutancommunity/geoipupdate:1.12.0
+    Description: Public ECR = public.ecr.aws/rungutancommunity/geoipupdate:1.12.0 <AND>  Docker HUB = rungutancommunity/geoipupdate:1.12.0
 
   MinCountSnubaApi:
     Type: String
