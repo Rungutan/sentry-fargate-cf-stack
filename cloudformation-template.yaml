@@ -175,7 +175,7 @@ Parameters:
   # OpsWorks ClickHouse variables
   ClickHouseCookbookUrl:
     Type: String
-    Default: https://github.com/Rungutan/sentry-fargate-cf-stack/releases/download/1.12.5/clickhouse-1.12.5.tar.gz
+    Default: https://github.com/Rungutan/sentry-fargate-cf-stack/releases/download/1.13.0/clickhouse-1.13.0.tar.gz
     
   ClickHouseInstanceType:
     Type: String
@@ -203,33 +203,28 @@ Parameters:
 
   SentryImage:
     Type: String
-    Default: public.ecr.aws/rungutancommunity/sentry-base:1.12.5
-    Description: Public ECR = public.ecr.aws/rungutancommunity/sentry-base:1.12.5 <AND> Docker HUB = rungutancommunity/sentry-base:1.12.5
+    Default: public.ecr.aws/x7u7j5v7/sentry-base:1.13.0
+    Description: Public ECR = public.ecr.aws/x7u7j5v7/sentry-base:1.13.0 <AND> Docker HUB = rungutancommunity/sentry-base:1.13.0
 
   SnubaImage:
     Type: String
-    Default: public.ecr.aws/rungutancommunity/sentry-snuba:1.12.5
-    Description: Public ECR = public.ecr.aws/rungutancommunity/sentry-snuba:1.12.5 <AND> Docker HUB = rungutancommunity/sentry-snuba:1.12.5
+    Default: public.ecr.aws/x7u7j5v7/sentry-snuba:1.13.0
+    Description: Public ECR = public.ecr.aws/x7u7j5v7/sentry-snuba:1.13.0 <AND> Docker HUB = rungutancommunity/sentry-snuba:1.13.0
 
   RelayImage:
     Type: String
-    Default: public.ecr.aws/rungutancommunity/sentry-relay:1.12.5
-    Description: Public ECR = public.ecr.aws/rungutancommunity/sentry-relay:1.12.5 <AND> Docker HUB = rungutancommunity/sentry-relay:1.12.5
+    Default: public.ecr.aws/x7u7j5v7/sentry-relay:1.13.0
+    Description: Public ECR = public.ecr.aws/x7u7j5v7/sentry-relay:1.13.0 <AND> Docker HUB = rungutancommunity/sentry-relay:1.13.0
 
   BashImage:
     Type: String
-    Default: public.ecr.aws/rungutancommunity/bash:1.12.5
-    Description: Public ECR = public.ecr.aws/rungutancommunity/bash:1.12.5 <AND> Docker HUB = rungutancommunity/bash:1.12.5
+    Default: public.ecr.aws/x7u7j5v7/bash:1.13.0
+    Description: Public ECR = public.ecr.aws/x7u7j5v7/bash:1.13.0 <AND> Docker HUB = rungutancommunity/bash:1.13.0
 
   ClickHouseImage:
     Type: String
-    Default: public.ecr.aws/rungutancommunity/clickhouse-client:1.12.5
-    Description: Public ECR = public.ecr.aws/rungutancommunity/clickhouse-client:1.12.5 <AND> Docker HUB = rungutancommunity/clickhouse-client:1.12.5
-
-  GeoIpUpdateImage:
-    Type: String
-    Default: public.ecr.aws/rungutancommunity/geoipupdate:1.12.5
-    Description: Public ECR = public.ecr.aws/rungutancommunity/geoipupdate:1.12.5 <AND>  Docker HUB = rungutancommunity/geoipupdate:1.12.5
+    Default: public.ecr.aws/x7u7j5v7/clickhouse-client:1.13.0
+    Description: Public ECR = public.ecr.aws/x7u7j5v7/clickhouse-client:1.13.0 <AND> Docker HUB = rungutancommunity/clickhouse-client:1.13.0
 
   MinCountSnubaApi:
     Type: String
@@ -425,18 +420,7 @@ Parameters:
     Type: String
     NoEcho: true
     Default: "not-defined"
-
-  # GeoIpUpdate integration
-  GeoIpUpdateAccountId:
-    Type: String
-    Default: "not-defined"
-    Description: Sample value = 012345. More info here -> https://develop.sentry.dev/self-hosted/geolocation/
-
-  GeoIpUpdateLicenseKey:
-    Type: String
-    Default: "not-defined"
-    NoEcho: true
-    Description: Sample value = foobarbazbuz. More info here -> https://develop.sentry.dev/self-hosted/geolocation/
+      
 
 Metadata:
   AWS::CloudFormation::Interface:
@@ -492,7 +476,6 @@ Metadata:
           - SnubaImage
           - RelayImage
           - BashImage
-          - GeoIpUpdateImage
           - ClickHouseImage
           - MinCountSnubaApi
           - MaxCountSnubaApi 
@@ -548,12 +531,6 @@ Metadata:
           - SentryEmailFrom
           - SentryEmailUseTls
           - SentryEmailUseSsl
-
-      - Label:
-          default: GeoIpUpdate integration settings
-        Parameters:
-          - GeoIpUpdateAccountId
-          - GeoIpUpdateLicenseKey
 
 Mappings:
 
@@ -2519,8 +2496,6 @@ Resources:
       Volumes:
         - Name: sentry-conf-vol
           Host: {}
-        - Name: geoipupdate-mmdb-vol
-          Host: {}
       ContainerDefinitions:
         - Name: sentry-config
           Image:
@@ -2558,40 +2533,13 @@ Resources:
               awslogs-group:
                 Ref: LogGroup
               awslogs-stream-prefix: ecs
-        - Name: geoipupdate-mmdb
-          Image:
-            Ref: GeoIpUpdateImage
-          Essential: false
-          Entrypoint: ["/bin/sh"]
-          Command:
-            - -c
-            - echo $GEOIP_CONFIG | base64 -d - | tee /etc/GeoIP.conf && /usr/bin/geoipupdate -d "/geoipupdate-mmdb" -f "/etc/GeoIP.conf" -v
-          Environment:
-            - Name: GEOIP_CONFIG
-              Value:
-                Fn::Base64:
-                  Fn::Sub: |
-                    AccountID ${GeoIpUpdateAccountId}
-                    LicenseKey ${GeoIpUpdateLicenseKey}
-                    EditionIDs GeoLite2-City
-          MountPoints:
-            - ContainerPath: /geoipupdate-mmdb/
-              SourceVolume: geoipupdate-mmdb-vol
-          LogConfiguration:
-            LogDriver: awslogs
-            Options:
-              awslogs-region:
-                Ref: AWS::Region
-              awslogs-group:
-                Ref: LogGroup
-              awslogs-stream-prefix: ecs
         - Name: sentry-web
           Image:
             Ref: SentryImage
           Entrypoint: ["/bin/bash"]
           Command:
             - "-c"
-            - "cp /config-sentry/config.yml /etc/sentry/config.yml && ((cp /geoipupdate-mmdb/GeoLite2-City.mmdb /geoip/GeoLite2-City.mmdb) || true) && sentry run web"
+            - "cp /config-sentry/config.yml /etc/sentry/config.yml && sentry run web"
           Essential: true
           DependsOn:
           - Condition: COMPLETE
@@ -2599,8 +2547,6 @@ Resources:
           MountPoints:
             - ContainerPath: /config-sentry/
               SourceVolume: sentry-conf-vol
-            - ContainerPath: /geoipupdate-mmdb/
-              SourceVolume: geoipupdate-mmdb-vol
           PortMappings:
           - ContainerPort: 9000
             Protocol: tcp
@@ -2818,8 +2764,6 @@ Resources:
       Volumes:
         - Name: relay-conf-vol
           Host: {}
-        - Name: geoipupdate-mmdb-vol
-          Host: {}
       ContainerDefinitions:
         - Name: relay-config
           Image:
@@ -2842,8 +2786,6 @@ Resources:
                     processing:
                       enabled: true
 
-                      geoip_path: "/geoip/GeoLite2-City.mmdb"
-
                       kafka_config:
                         - name: "bootstrap.servers"
                           value: "${KafkaGetBrokersLambdaResult.KafkaBroker1},${KafkaGetBrokersLambdaResult.KafkaBroker2},${KafkaGetBrokersLambdaResult.KafkaBroker3}"
@@ -2853,33 +2795,6 @@ Resources:
           MountPoints:
             - ContainerPath: /config-relay/
               SourceVolume: relay-conf-vol
-          LogConfiguration:
-            LogDriver: awslogs
-            Options:
-              awslogs-region:
-                Ref: AWS::Region
-              awslogs-group:
-                Ref: LogGroup
-              awslogs-stream-prefix: ecs
-        - Name: geoipupdate-mmdb
-          Image:
-            Ref: GeoIpUpdateImage
-          Essential: false
-          Entrypoint: ["/bin/sh"]
-          Command:
-            - -c
-            - echo $GEOIP_CONFIG | base64 -d - | tee /etc/GeoIP.conf && /usr/bin/geoipupdate -d "/geoipupdate-mmdb" -f "/etc/GeoIP.conf" -v
-          Environment:
-            - Name: GEOIP_CONFIG
-              Value:
-                Fn::Base64:
-                  Fn::Sub: |
-                    AccountID ${GeoIpUpdateAccountId}
-                    LicenseKey ${GeoIpUpdateLicenseKey}
-                    EditionIDs GeoLite2-City
-          MountPoints:
-            - ContainerPath: /geoipupdate-mmdb/
-              SourceVolume: geoipupdate-mmdb-vol
           LogConfiguration:
             LogDriver: awslogs
             Options:
@@ -2901,8 +2816,6 @@ Resources:
           MountPoints:
             - ContainerPath: /config-relay/
               SourceVolume: relay-conf-vol
-            - ContainerPath: /geoipupdate-mmdb/
-              SourceVolume: geoipupdate-mmdb-vol
           Secrets:
             - Name: POSTGRES_PASSWORD
               ValueFrom:
@@ -2916,8 +2829,6 @@ Resources:
                 Ref: AWS::Region
             - Name: CONFIG_FILE_PATH
               Value: /config-relay/config.yml
-            - Name: GEOIPUPDATE_FILE_PATH
-              Value: /geoipupdate-mmdb/GeoLite2-City.mmdb
             - Name: RELAY_PORT
               Value: "3000"
             - Name: REDIS_HOST
@@ -3148,8 +3059,6 @@ Resources:
       Volumes:
         - Name: sentry-conf-vol
           Host: {}
-        - Name: geoipupdate-mmdb-vol
-          Host: {}
       ContainerDefinitions:
         - Name: sentry-config
           Image:
@@ -3187,33 +3096,6 @@ Resources:
               awslogs-group:
                 Ref: LogGroup
               awslogs-stream-prefix: ecs
-        - Name: geoipupdate-mmdb
-          Image:
-            Ref: GeoIpUpdateImage
-          Essential: false
-          Entrypoint: ["/bin/sh"]
-          Command:
-            - -c
-            - echo $GEOIP_CONFIG | base64 -d - | tee /etc/GeoIP.conf && /usr/bin/geoipupdate -d "/geoipupdate-mmdb" -f "/etc/GeoIP.conf" -v
-          Environment:
-            - Name: GEOIP_CONFIG
-              Value:
-                Fn::Base64:
-                  Fn::Sub: |
-                    AccountID ${GeoIpUpdateAccountId}
-                    LicenseKey ${GeoIpUpdateLicenseKey}
-                    EditionIDs GeoLite2-City
-          MountPoints:
-            - ContainerPath: /geoipupdate-mmdb/
-              SourceVolume: geoipupdate-mmdb-vol
-          LogConfiguration:
-            LogDriver: awslogs
-            Options:
-              awslogs-region:
-                Ref: AWS::Region
-              awslogs-group:
-                Ref: LogGroup
-              awslogs-stream-prefix: ecs
         - Name: sentry-cron
           Image:
             Ref: SentryImage
@@ -3224,12 +3106,10 @@ Resources:
           MountPoints:
             - ContainerPath: /config-sentry/
               SourceVolume: sentry-conf-vol
-            - ContainerPath: /geoipupdate-mmdb/
-              SourceVolume: geoipupdate-mmdb-vol
           Entrypoint: ["/bin/bash"]
           Command:
             - "-c"
-            - "cp /config-sentry/config.yml /etc/sentry/config.yml && ((cp /geoipupdate-mmdb/GeoLite2-City.mmdb /geoip/GeoLite2-City.mmdb) || true) && sentry run cron"
+            - "cp /config-sentry/config.yml /etc/sentry/config.yml && sentry run cron"
           Secrets:
             - Name: POSTGRES_PASSWORD
               ValueFrom:
@@ -3347,8 +3227,6 @@ Resources:
       Volumes:
         - Name: sentry-conf-vol
           Host: {}
-        - Name: geoipupdate-mmdb-vol
-          Host: {}
       ContainerDefinitions:
         - Name: sentry-config
           Image:
@@ -3386,33 +3264,6 @@ Resources:
               awslogs-group:
                 Ref: LogGroup
               awslogs-stream-prefix: ecs
-        - Name: geoipupdate-mmdb
-          Image:
-            Ref: GeoIpUpdateImage
-          Essential: false
-          Entrypoint: ["/bin/sh"]
-          Command:
-            - -c
-            - echo $GEOIP_CONFIG | base64 -d - | tee /etc/GeoIP.conf && /usr/bin/geoipupdate -d "/geoipupdate-mmdb" -f "/etc/GeoIP.conf" -v
-          Environment:
-            - Name: GEOIP_CONFIG
-              Value:
-                Fn::Base64:
-                  Fn::Sub: |
-                    AccountID ${GeoIpUpdateAccountId}
-                    LicenseKey ${GeoIpUpdateLicenseKey}
-                    EditionIDs GeoLite2-City
-          MountPoints:
-            - ContainerPath: /geoipupdate-mmdb/
-              SourceVolume: geoipupdate-mmdb-vol
-          LogConfiguration:
-            LogDriver: awslogs
-            Options:
-              awslogs-region:
-                Ref: AWS::Region
-              awslogs-group:
-                Ref: LogGroup
-              awslogs-stream-prefix: ecs
         - Name: sentry-ingest-attachments
           Image:
             Ref: SentryImage
@@ -3423,12 +3274,10 @@ Resources:
           MountPoints:
             - ContainerPath: /config-sentry/
               SourceVolume: sentry-conf-vol
-            - ContainerPath: /geoipupdate-mmdb/
-              SourceVolume: geoipupdate-mmdb-vol
           Entrypoint: ["/bin/bash"]
           Command:
             - "-c"
-            - "cp /config-sentry/config.yml /etc/sentry/config.yml && ((cp /geoipupdate-mmdb/GeoLite2-City.mmdb /geoip/GeoLite2-City.mmdb) || true) && sentry run ingest-consumer --consumer-type attachments"
+            - "cp /config-sentry/config.yml /etc/sentry/config.yml && sentry run ingest-consumer --consumer-type attachments"
           Secrets:
             - Name: POSTGRES_PASSWORD
               ValueFrom:
@@ -3592,8 +3441,6 @@ Resources:
       Volumes:
         - Name: sentry-conf-vol
           Host: {}
-        - Name: geoipupdate-mmdb-vol
-          Host: {}
       ContainerDefinitions:
         - Name: sentry-config
           Image:
@@ -3631,33 +3478,6 @@ Resources:
               awslogs-group:
                 Ref: LogGroup
               awslogs-stream-prefix: ecs
-        - Name: geoipupdate-mmdb
-          Image:
-            Ref: GeoIpUpdateImage
-          Essential: false
-          Entrypoint: ["/bin/sh"]
-          Command:
-            - -c
-            - echo $GEOIP_CONFIG | base64 -d - | tee /etc/GeoIP.conf && /usr/bin/geoipupdate -d "/geoipupdate-mmdb" -f "/etc/GeoIP.conf" -v
-          Environment:
-            - Name: GEOIP_CONFIG
-              Value:
-                Fn::Base64:
-                  Fn::Sub: |
-                    AccountID ${GeoIpUpdateAccountId}
-                    LicenseKey ${GeoIpUpdateLicenseKey}
-                    EditionIDs GeoLite2-City
-          MountPoints:
-            - ContainerPath: /geoipupdate-mmdb/
-              SourceVolume: geoipupdate-mmdb-vol
-          LogConfiguration:
-            LogDriver: awslogs
-            Options:
-              awslogs-region:
-                Ref: AWS::Region
-              awslogs-group:
-                Ref: LogGroup
-              awslogs-stream-prefix: ecs
         - Name: sentry-ingest-events
           Image:
             Ref: SentryImage
@@ -3668,12 +3488,10 @@ Resources:
           MountPoints:
             - ContainerPath: /config-sentry/
               SourceVolume: sentry-conf-vol
-            - ContainerPath: /geoipupdate-mmdb/
-              SourceVolume: geoipupdate-mmdb-vol
           Entrypoint: ["/bin/bash"]
           Command:
             - "-c"
-            - "cp /config-sentry/config.yml /etc/sentry/config.yml && ((cp /geoipupdate-mmdb/GeoLite2-City.mmdb /geoip/GeoLite2-City.mmdb) || true) && sentry run ingest-consumer --consumer-type events"
+            - "cp /config-sentry/config.yml /etc/sentry/config.yml && sentry run ingest-consumer --consumer-type events"
           Secrets:
             - Name: POSTGRES_PASSWORD
               ValueFrom:
@@ -3837,8 +3655,6 @@ Resources:
       Volumes:
         - Name: sentry-conf-vol
           Host: {}
-        - Name: geoipupdate-mmdb-vol
-          Host: {}
       ContainerDefinitions:
         - Name: sentry-config
           Image:
@@ -3876,33 +3692,6 @@ Resources:
               awslogs-group:
                 Ref: LogGroup
               awslogs-stream-prefix: ecs
-        - Name: geoipupdate-mmdb
-          Image:
-            Ref: GeoIpUpdateImage
-          Essential: false
-          Entrypoint: ["/bin/sh"]
-          Command:
-            - -c
-            - echo $GEOIP_CONFIG | base64 -d - | tee /etc/GeoIP.conf && /usr/bin/geoipupdate -d "/geoipupdate-mmdb" -f "/etc/GeoIP.conf" -v
-          Environment:
-            - Name: GEOIP_CONFIG
-              Value:
-                Fn::Base64:
-                  Fn::Sub: |
-                    AccountID ${GeoIpUpdateAccountId}
-                    LicenseKey ${GeoIpUpdateLicenseKey}
-                    EditionIDs GeoLite2-City
-          MountPoints:
-            - ContainerPath: /geoipupdate-mmdb/
-              SourceVolume: geoipupdate-mmdb-vol
-          LogConfiguration:
-            LogDriver: awslogs
-            Options:
-              awslogs-region:
-                Ref: AWS::Region
-              awslogs-group:
-                Ref: LogGroup
-              awslogs-stream-prefix: ecs
         - Name: sentry-ingest-transactions
           Image:
             Ref: SentryImage
@@ -3913,12 +3702,10 @@ Resources:
           MountPoints:
             - ContainerPath: /config-sentry/
               SourceVolume: sentry-conf-vol
-            - ContainerPath: /geoipupdate-mmdb/
-              SourceVolume: geoipupdate-mmdb-vol
           Entrypoint: ["/bin/bash"]
           Command:
             - "-c"
-            - "cp /config-sentry/config.yml /etc/sentry/config.yml && ((cp /geoipupdate-mmdb/GeoLite2-City.mmdb /geoip/GeoLite2-City.mmdb) || true) && sentry run ingest-consumer --consumer-type transactions"
+            - "cp /config-sentry/config.yml /etc/sentry/config.yml && sentry run ingest-consumer --consumer-type transactions"
           Secrets:
             - Name: POSTGRES_PASSWORD
               ValueFrom:
@@ -4082,8 +3869,6 @@ Resources:
       Volumes:
         - Name: sentry-conf-vol
           Host: {}
-        - Name: geoipupdate-mmdb-vol
-          Host: {}
       ContainerDefinitions:
         - Name: sentry-config
           Image:
@@ -4121,33 +3906,6 @@ Resources:
               awslogs-group:
                 Ref: LogGroup
               awslogs-stream-prefix: ecs
-        - Name: geoipupdate-mmdb
-          Image:
-            Ref: GeoIpUpdateImage
-          Essential: false
-          Entrypoint: ["/bin/sh"]
-          Command:
-            - -c
-            - echo $GEOIP_CONFIG | base64 -d - | tee /etc/GeoIP.conf && /usr/bin/geoipupdate -d "/geoipupdate-mmdb" -f "/etc/GeoIP.conf" -v
-          Environment:
-            - Name: GEOIP_CONFIG
-              Value:
-                Fn::Base64:
-                  Fn::Sub: |
-                    AccountID ${GeoIpUpdateAccountId}
-                    LicenseKey ${GeoIpUpdateLicenseKey}
-                    EditionIDs GeoLite2-City
-          MountPoints:
-            - ContainerPath: /geoipupdate-mmdb/
-              SourceVolume: geoipupdate-mmdb-vol
-          LogConfiguration:
-            LogDriver: awslogs
-            Options:
-              awslogs-region:
-                Ref: AWS::Region
-              awslogs-group:
-                Ref: LogGroup
-              awslogs-stream-prefix: ecs
         - Name: sentry-post-process-forward
           Image:
             Ref: SentryImage
@@ -4158,12 +3916,10 @@ Resources:
           MountPoints:
             - ContainerPath: /config-sentry/
               SourceVolume: sentry-conf-vol
-            - ContainerPath: /geoipupdate-mmdb/
-              SourceVolume: geoipupdate-mmdb-vol
           Entrypoint: ["/bin/bash"]
           Command:
             - "-c"
-            - "cp /config-sentry/config.yml /etc/sentry/config.yml && ((cp /geoipupdate-mmdb/GeoLite2-City.mmdb /geoip/GeoLite2-City.mmdb) || true) && sentry run post-process-forwarder --commit-batch-size 1"
+            - "cp /config-sentry/config.yml /etc/sentry/config.yml && sentry run post-process-forwarder --commit-batch-size 1"
           Secrets:
             - Name: POSTGRES_PASSWORD
               ValueFrom:
@@ -5163,8 +4919,6 @@ Resources:
       Volumes:
         - Name: sentry-conf-vol
           Host: {}
-        - Name: geoipupdate-mmdb-vol
-          Host: {}
       ContainerDefinitions:
         - Name: sentry-config
           Image:
@@ -5202,33 +4956,6 @@ Resources:
               awslogs-group:
                 Ref: LogGroup
               awslogs-stream-prefix: ecs
-        - Name: geoipupdate-mmdb
-          Image:
-            Ref: GeoIpUpdateImage
-          Essential: false
-          Entrypoint: ["/bin/sh"]
-          Command:
-            - -c
-            - echo $GEOIP_CONFIG | base64 -d - | tee /etc/GeoIP.conf && /usr/bin/geoipupdate -d "/geoipupdate-mmdb" -f "/etc/GeoIP.conf" -v
-          Environment:
-            - Name: GEOIP_CONFIG
-              Value:
-                Fn::Base64:
-                  Fn::Sub: |
-                    AccountID ${GeoIpUpdateAccountId}
-                    LicenseKey ${GeoIpUpdateLicenseKey}
-                    EditionIDs GeoLite2-City
-          MountPoints:
-            - ContainerPath: /geoipupdate-mmdb/
-              SourceVolume: geoipupdate-mmdb-vol
-          LogConfiguration:
-            LogDriver: awslogs
-            Options:
-              awslogs-region:
-                Ref: AWS::Region
-              awslogs-group:
-                Ref: LogGroup
-              awslogs-stream-prefix: ecs
         - Name: sentry-worker
           Image:
             Ref: SentryImage
@@ -5239,12 +4966,10 @@ Resources:
           MountPoints:
             - ContainerPath: /config-sentry/
               SourceVolume: sentry-conf-vol
-            - ContainerPath: /geoipupdate-mmdb/
-              SourceVolume: geoipupdate-mmdb-vol              
           Entrypoint: ["/bin/bash"]
           Command:
             - "-c"
-            - "cp /config-sentry/config.yml /etc/sentry/config.yml && ((cp /geoipupdate-mmdb/GeoLite2-City.mmdb /geoip/GeoLite2-City.mmdb) || true) && sentry run worker -c 4"
+            - "cp /config-sentry/config.yml /etc/sentry/config.yml && sentry run worker -c 4"
           Secrets:
             - Name: POSTGRES_PASSWORD
               ValueFrom:
@@ -5521,8 +5246,6 @@ Resources:
       Volumes:
         - Name: sentry-conf-vol
           Host: {}
-        - Name: geoipupdate-mmdb-vol
-          Host: {}
       ContainerDefinitions:
         - Name: sentry-config
           Image:
@@ -5560,33 +5283,6 @@ Resources:
               awslogs-group:
                 Ref: LogGroup
               awslogs-stream-prefix: ecs
-        - Name: geoipupdate-mmdb
-          Image:
-            Ref: GeoIpUpdateImage
-          Essential: false
-          Entrypoint: ["/bin/sh"]
-          Command:
-            - -c
-            - echo $GEOIP_CONFIG | base64 -d - | tee /etc/GeoIP.conf && /usr/bin/geoipupdate -d "/geoipupdate-mmdb" -f "/etc/GeoIP.conf" -v
-          Environment:
-            - Name: GEOIP_CONFIG
-              Value:
-                Fn::Base64:
-                  Fn::Sub: |
-                    AccountID ${GeoIpUpdateAccountId}
-                    LicenseKey ${GeoIpUpdateLicenseKey}
-                    EditionIDs GeoLite2-City
-          MountPoints:
-            - ContainerPath: /geoipupdate-mmdb/
-              SourceVolume: geoipupdate-mmdb-vol
-          LogConfiguration:
-            LogDriver: awslogs
-            Options:
-              awslogs-region:
-                Ref: AWS::Region
-              awslogs-group:
-                Ref: LogGroup
-              awslogs-stream-prefix: ecs
         - Name: sentry-worker
           Image:
             Ref: SentryImage
@@ -5597,12 +5293,10 @@ Resources:
           MountPoints:
             - ContainerPath: /config-sentry/
               SourceVolume: sentry-conf-vol
-            - ContainerPath: /geoipupdate-mmdb/
-              SourceVolume: geoipupdate-mmdb-vol
           Entrypoint: ["/bin/bash"]
           Command:
             - "-c"
-            - "cp /config-sentry/config.yml /etc/sentry/config.yml && ((cp /geoipupdate-mmdb/GeoLite2-City.mmdb /geoip/GeoLite2-City.mmdb) || true) && sentry upgrade"
+            - "cp /config-sentry/config.yml /etc/sentry/config.yml && sentry upgrade"
           Secrets:
             - Name: POSTGRES_PASSWORD
               ValueFrom:
@@ -5949,8 +5643,6 @@ Resources:
       Volumes:
         - Name: sentry-conf-vol
           Host: {}
-        - Name: geoipupdate-mmdb-vol
-          Host: {}
       ContainerDefinitions:
         - Name: sentry-config
           Image:
@@ -5988,33 +5680,6 @@ Resources:
               awslogs-group:
                 Ref: LogGroup
               awslogs-stream-prefix: ecs
-        - Name: geoipupdate-mmdb
-          Image:
-            Ref: GeoIpUpdateImage
-          Essential: false
-          Entrypoint: ["/bin/sh"]
-          Command:
-            - -c
-            - echo $GEOIP_CONFIG | base64 -d - | tee /etc/GeoIP.conf && /usr/bin/geoipupdate -d "/geoipupdate-mmdb" -f "/etc/GeoIP.conf" -v
-          Environment:
-            - Name: GEOIP_CONFIG
-              Value:
-                Fn::Base64:
-                  Fn::Sub: |
-                    AccountID ${GeoIpUpdateAccountId}
-                    LicenseKey ${GeoIpUpdateLicenseKey}
-                    EditionIDs GeoLite2-City
-          MountPoints:
-            - ContainerPath: /geoipupdate-mmdb/
-              SourceVolume: geoipupdate-mmdb-vol
-          LogConfiguration:
-            LogDriver: awslogs
-            Options:
-              awslogs-region:
-                Ref: AWS::Region
-              awslogs-group:
-                Ref: LogGroup
-              awslogs-stream-prefix: ecs
         - Name: sentry-worker
           Image:
             Ref: SentryImage
@@ -6025,12 +5690,10 @@ Resources:
           MountPoints:
             - ContainerPath: /config-sentry/
               SourceVolume: sentry-conf-vol
-            - ContainerPath: /geoipupdate-mmdb/
-              SourceVolume: geoipupdate-mmdb-vol
           Entrypoint: ["/bin/bash"]
           Command:
             - "-c"
-            - Fn::Sub: "cp /config-sentry/config.yml /etc/sentry/config.yml && ((cp /geoipupdate-mmdb/GeoLite2-City.mmdb /geoip/GeoLite2-City.mmdb) || true) && (sentry createuser --no-input --superuser --email \"${InitialAdminUserEmail}\" --password \"${!INITIAL_ADMIN_USER_PASSWORD}\" || true)"
+            - Fn::Sub: "cp /config-sentry/config.yml /etc/sentry/config.yml && (sentry createuser --no-input --superuser --email \"${InitialAdminUserEmail}\" --password \"${!INITIAL_ADMIN_USER_PASSWORD}\" || true)"
           Secrets:
             - Name: INITIAL_ADMIN_USER_PASSWORD
               ValueFrom:
