@@ -175,7 +175,7 @@ Parameters:
   # OpsWorks ClickHouse variables
   ClickHouseCookbookUrl:
     Type: String
-    Default: https://github.com/Rungutan/sentry-fargate-cf-stack/releases/download/1.12.4/clickhouse-1.12.4.tar.gz
+    Default: https://github.com/Rungutan/sentry-fargate-cf-stack/releases/download/1.12.5/clickhouse-1.12.5.tar.gz
     
   ClickHouseInstanceType:
     Type: String
@@ -203,33 +203,33 @@ Parameters:
 
   SentryImage:
     Type: String
-    Default: public.ecr.aws/rungutancommunity/sentry-base:1.12.4
-    Description: Public ECR = public.ecr.aws/rungutancommunity/sentry-base:1.12.4 <AND> Docker HUB = rungutancommunity/sentry-base:1.12.4
+    Default: public.ecr.aws/rungutancommunity/sentry-base:1.12.5
+    Description: Public ECR = public.ecr.aws/rungutancommunity/sentry-base:1.12.5 <AND> Docker HUB = rungutancommunity/sentry-base:1.12.5
 
   SnubaImage:
     Type: String
-    Default: public.ecr.aws/rungutancommunity/sentry-snuba:1.12.4
-    Description: Public ECR = public.ecr.aws/rungutancommunity/sentry-snuba:1.12.4 <AND> Docker HUB = rungutancommunity/sentry-snuba:1.12.4
+    Default: public.ecr.aws/rungutancommunity/sentry-snuba:1.12.5
+    Description: Public ECR = public.ecr.aws/rungutancommunity/sentry-snuba:1.12.5 <AND> Docker HUB = rungutancommunity/sentry-snuba:1.12.5
 
   RelayImage:
     Type: String
-    Default: public.ecr.aws/rungutancommunity/sentry-relay:1.12.4
-    Description: Public ECR = public.ecr.aws/rungutancommunity/sentry-relay:1.12.4 <AND> Docker HUB = rungutancommunity/sentry-relay:1.12.4
+    Default: public.ecr.aws/rungutancommunity/sentry-relay:1.12.5
+    Description: Public ECR = public.ecr.aws/rungutancommunity/sentry-relay:1.12.5 <AND> Docker HUB = rungutancommunity/sentry-relay:1.12.5
 
   BashImage:
     Type: String
-    Default: public.ecr.aws/rungutancommunity/bash:1.12.4
-    Description: Public ECR = public.ecr.aws/rungutancommunity/bash:1.12.4 <AND> Docker HUB = rungutancommunity/bash:1.12.4
+    Default: public.ecr.aws/rungutancommunity/bash:1.12.5
+    Description: Public ECR = public.ecr.aws/rungutancommunity/bash:1.12.5 <AND> Docker HUB = rungutancommunity/bash:1.12.5
 
   ClickHouseImage:
     Type: String
-    Default: public.ecr.aws/rungutancommunity/clickhouse-client:1.12.4
-    Description: Public ECR = public.ecr.aws/rungutancommunity/clickhouse-client:1.12.4 <AND> Docker HUB = rungutancommunity/clickhouse-client:1.12.4
+    Default: public.ecr.aws/rungutancommunity/clickhouse-client:1.12.5
+    Description: Public ECR = public.ecr.aws/rungutancommunity/clickhouse-client:1.12.5 <AND> Docker HUB = rungutancommunity/clickhouse-client:1.12.5
 
   GeoIpUpdateImage:
     Type: String
-    Default: public.ecr.aws/rungutancommunity/geoipupdate:1.12.4
-    Description: Public ECR = public.ecr.aws/rungutancommunity/geoipupdate:1.12.4 <AND>  Docker HUB = rungutancommunity/geoipupdate:1.12.4
+    Default: public.ecr.aws/rungutancommunity/geoipupdate:1.12.5
+    Description: Public ECR = public.ecr.aws/rungutancommunity/geoipupdate:1.12.5 <AND>  Docker HUB = rungutancommunity/geoipupdate:1.12.5
 
   MinCountSnubaApi:
     Type: String
@@ -2562,6 +2562,7 @@ Resources:
           Image:
             Ref: GeoIpUpdateImage
           Essential: false
+          Entrypoint: ["/bin/sh"]
           Command:
             - -c
             - echo $GEOIP_CONFIG | base64 -d - | tee /etc/GeoIP.conf && /usr/bin/geoipupdate -d "/geoipupdate-mmdb" -f "/etc/GeoIP.conf" -v
@@ -2864,6 +2865,7 @@ Resources:
           Image:
             Ref: GeoIpUpdateImage
           Essential: false
+          Entrypoint: ["/bin/sh"]
           Command:
             - -c
             - echo $GEOIP_CONFIG | base64 -d - | tee /etc/GeoIP.conf && /usr/bin/geoipupdate -d "/geoipupdate-mmdb" -f "/etc/GeoIP.conf" -v
@@ -3189,6 +3191,7 @@ Resources:
           Image:
             Ref: GeoIpUpdateImage
           Essential: false
+          Entrypoint: ["/bin/sh"]
           Command:
             - -c
             - echo $GEOIP_CONFIG | base64 -d - | tee /etc/GeoIP.conf && /usr/bin/geoipupdate -d "/geoipupdate-mmdb" -f "/etc/GeoIP.conf" -v
@@ -3387,6 +3390,7 @@ Resources:
           Image:
             Ref: GeoIpUpdateImage
           Essential: false
+          Entrypoint: ["/bin/sh"]
           Command:
             - -c
             - echo $GEOIP_CONFIG | base64 -d - | tee /etc/GeoIP.conf && /usr/bin/geoipupdate -d "/geoipupdate-mmdb" -f "/etc/GeoIP.conf" -v
@@ -3631,6 +3635,7 @@ Resources:
           Image:
             Ref: GeoIpUpdateImage
           Essential: false
+          Entrypoint: ["/bin/sh"]
           Command:
             - -c
             - echo $GEOIP_CONFIG | base64 -d - | tee /etc/GeoIP.conf && /usr/bin/geoipupdate -d "/geoipupdate-mmdb" -f "/etc/GeoIP.conf" -v
@@ -3875,6 +3880,7 @@ Resources:
           Image:
             Ref: GeoIpUpdateImage
           Essential: false
+          Entrypoint: ["/bin/sh"]
           Command:
             - -c
             - echo $GEOIP_CONFIG | base64 -d - | tee /etc/GeoIP.conf && /usr/bin/geoipupdate -d "/geoipupdate-mmdb" -f "/etc/GeoIP.conf" -v
@@ -4119,6 +4125,7 @@ Resources:
           Image:
             Ref: GeoIpUpdateImage
           Essential: false
+          Entrypoint: ["/bin/sh"]
           Command:
             - -c
             - echo $GEOIP_CONFIG | base64 -d - | tee /etc/GeoIP.conf && /usr/bin/geoipupdate -d "/geoipupdate-mmdb" -f "/etc/GeoIP.conf" -v
@@ -5199,6 +5206,7 @@ Resources:
           Image:
             Ref: GeoIpUpdateImage
           Essential: false
+          Entrypoint: ["/bin/sh"]
           Command:
             - -c
             - echo $GEOIP_CONFIG | base64 -d - | tee /etc/GeoIP.conf && /usr/bin/geoipupdate -d "/geoipupdate-mmdb" -f "/etc/GeoIP.conf" -v
@@ -5556,6 +5564,7 @@ Resources:
           Image:
             Ref: GeoIpUpdateImage
           Essential: false
+          Entrypoint: ["/bin/sh"]
           Command:
             - -c
             - echo $GEOIP_CONFIG | base64 -d - | tee /etc/GeoIP.conf && /usr/bin/geoipupdate -d "/geoipupdate-mmdb" -f "/etc/GeoIP.conf" -v
@@ -5983,6 +5992,7 @@ Resources:
           Image:
             Ref: GeoIpUpdateImage
           Essential: false
+          Entrypoint: ["/bin/sh"]
           Command:
             - -c
             - echo $GEOIP_CONFIG | base64 -d - | tee /etc/GeoIP.conf && /usr/bin/geoipupdate -d "/geoipupdate-mmdb" -f "/etc/GeoIP.conf" -v
