@@ -21,14 +21,6 @@ jobs:
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
-      - name: Login to ECR
-        uses: docker/login-action@v1
-        with:
-          registry: public.ecr.aws
-          username: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          password: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        env:
-          AWS_REGION: ${{ secrets.AWS_REGION }}
       - name: Build and push Sentry Base image
         id: docker_build_sentry_basse
         uses: docker/build-push-action@v2
@@ -38,7 +30,6 @@ jobs:
           push: true
           tags: |
             rungutancommunity/sentry-base:latest
-            public.ecr.aws/rungutancommunity/sentry-base:latest
   sentry-relay:
     runs-on: ubuntu-latest
     steps:
@@ -55,14 +46,6 @@ jobs:
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
-      - name: Login to ECR
-        uses: docker/login-action@v1
-        with:
-          registry: public.ecr.aws
-          username: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          password: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        env:
-          AWS_REGION: ${{ secrets.AWS_REGION }}
       - name: Build and push Sentry Relay image
         id: docker_build_sentry_relay
         uses: docker/build-push-action@v2
@@ -72,7 +55,6 @@ jobs:
           push: true
           tags: |
             rungutancommunity/sentry-relay:latest
-            public.ecr.aws/rungutancommunity/sentry-relay:latest
   sentry-snuba:
     runs-on: ubuntu-latest
     steps:
@@ -89,14 +71,6 @@ jobs:
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
-      - name: Login to ECR
-        uses: docker/login-action@v1
-        with:
-          registry: public.ecr.aws
-          username: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          password: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        env:
-          AWS_REGION: ${{ secrets.AWS_REGION }}
       - name: Build and push Sentry Snuba image
         id: docker_build_sentry_snuba
         uses: docker/build-push-action@v2
@@ -106,7 +80,6 @@ jobs:
           push: true
           tags: |
             rungutancommunity/sentry-snuba:latest
-            public.ecr.aws/rungutancommunity/sentry-snuba:latest
   bash:
     runs-on: ubuntu-latest
     steps:
@@ -123,14 +96,6 @@ jobs:
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
-      - name: Login to ECR
-        uses: docker/login-action@v1
-        with:
-          registry: public.ecr.aws
-          username: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          password: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        env:
-          AWS_REGION: ${{ secrets.AWS_REGION }}
       - name: Build and push Bash image
         id: docker_build_bash
         uses: docker/build-push-action@v2
@@ -140,7 +105,6 @@ jobs:
           push: true
           tags: |
             rungutancommunity/bash:latest
-            public.ecr.aws/rungutancommunity/bash:latest
   geoipupdate:
     runs-on: ubuntu-latest
     steps:
@@ -157,14 +121,6 @@ jobs:
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
-      - name: Login to ECR
-        uses: docker/login-action@v1
-        with:
-          registry: public.ecr.aws
-          username: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          password: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        env:
-          AWS_REGION: ${{ secrets.AWS_REGION }}
       - name: Build and push GeoIpUpdate image
         id: docker_build_geoipupdate
         uses: docker/build-push-action@v2
@@ -174,7 +130,6 @@ jobs:
           push: true
           tags: |
             rungutancommunity/geoipupdate:latest
-            public.ecr.aws/rungutancommunity/geoipupdate:latest
   clickhouse-client:
     runs-on: ubuntu-latest
     steps:
@@ -191,14 +146,6 @@ jobs:
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
-      - name: Login to ECR
-        uses: docker/login-action@v1
-        with:
-          registry: public.ecr.aws
-          username: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          password: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        env:
-          AWS_REGION: ${{ secrets.AWS_REGION }}
       - name: Build and push ClickHouse Client image
         id: docker_build_clickhouse_client
         uses: docker/build-push-action@v2
@@ -208,6 +155,5 @@ jobs:
           push: true
           tags: |
             rungutancommunity/clickhouse-client:latest
-            public.ecr.aws/rungutancommunity/clickhouse-client:latest
 
 

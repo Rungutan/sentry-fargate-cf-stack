@@ -203,28 +203,23 @@ Parameters:
 
   SentryImage:
     Type: String
-    Default: public.ecr.aws/x7u7j5v7/sentry-base:1.13.0
-    Description: Public ECR = public.ecr.aws/x7u7j5v7/sentry-base:1.13.0 <AND> Docker HUB = rungutancommunity/sentry-base:1.13.0
+    Default: rungutancommunity/sentry-base:1.13.0
 
   SnubaImage:
     Type: String
-    Default: public.ecr.aws/x7u7j5v7/sentry-snuba:1.13.0
-    Description: Public ECR = public.ecr.aws/x7u7j5v7/sentry-snuba:1.13.0 <AND> Docker HUB = rungutancommunity/sentry-snuba:1.13.0
+    Default: rungutancommunity/sentry-snuba:1.13.0
 
   RelayImage:
     Type: String
-    Default: public.ecr.aws/x7u7j5v7/sentry-relay:1.13.0
-    Description: Public ECR = public.ecr.aws/x7u7j5v7/sentry-relay:1.13.0 <AND> Docker HUB = rungutancommunity/sentry-relay:1.13.0
+    Default: rungutancommunity/sentry-relay:1.13.0
 
   BashImage:
     Type: String
-    Default: public.ecr.aws/x7u7j5v7/bash:1.13.0
-    Description: Public ECR = public.ecr.aws/x7u7j5v7/bash:1.13.0 <AND> Docker HUB = rungutancommunity/bash:1.13.0
+    Default: rungutancommunity/bash:1.13.0
 
   ClickHouseImage:
     Type: String
-    Default: public.ecr.aws/x7u7j5v7/clickhouse-client:1.13.0
-    Description: Public ECR = public.ecr.aws/x7u7j5v7/clickhouse-client:1.13.0 <AND> Docker HUB = rungutancommunity/clickhouse-client:1.13.0
+    Default: rungutancommunity/clickhouse-client:1.13.0
 
   MinCountSnubaApi:
     Type: String

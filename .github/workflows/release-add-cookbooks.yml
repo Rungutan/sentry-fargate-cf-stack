@@ -24,7 +24,6 @@ jobs:
           bundle install
           gem install berkshelf -v '~> 6.3.4'
           berks package clickhouse.tar.gz
-          ls -altr
       - name: Create Release
         id: create_release
         uses: actions/create-release@v1
