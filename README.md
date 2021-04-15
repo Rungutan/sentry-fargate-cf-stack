@@ -288,6 +288,42 @@ In order to correctly perform the migration, you would have to:
   * Import the database dump (see [utilities/import.sh](utilities/import.sh) script)
   * Destroy the bastion host and clean up the security group.
 
+### Using a private ECR Docker image mirror
+
+Since Docker hub has started to enforce API limits for public repos, you may end up in a situation where images cannot be fetched from the public Docker repo. You can set up your own mirror as a private ECR repository and change parameters for the Docker images accordingly. [https://github.com/seatgeek/docker-mirror](Docker-Mirror) can help you in automating the mirroring process.
+
+#### Example config
+
+```yaml
+---
+target:
+  registry: ACCOUNTID.dkr.ecr.REGION.amazonaws.com
+  prefix: "hub/"
+
+repositories:
+  - name: rungutancommunity/sentry-base
+    max_tag_age: 4w
+
+  - name: rungutancommunity/sentry-relay
+    max_tag_age: 4w
+
+  - name: rungutancommunity/sentry-snuba
+    max_tag_age: 4w
+
+  - name: rungutancommunity/clickhouse-client
+    max_tag_age: 4w
+
+  - name: rungutancommunity/geoipupdate
+    max_tag_age: 4w
+
+  - name: rungutancommunity/bash
+    max_tag_age: 4w
+```
+
+####mExample image parameters
+```
+ACCOUNTID.dkr.ecr.REGION.amazonaws.com/hub/rungutancommunity/bash:1.13.1
+```
 
 ## Final thoughts
 
