@@ -1,4 +1,4 @@
-FROM getsentry/relay:21.1.0
+FROM getsentry/relay:21.4.1
 
 COPY docker-alt-entrypoint.sh /docker-entrypoint.sh
 
