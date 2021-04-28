@@ -322,7 +322,7 @@ repositories:
 
 ####mExample image parameters
 ```
-ACCOUNTID.dkr.ecr.REGION.amazonaws.com/hub/rungutancommunity/bash:1.13.1
+ACCOUNTID.dkr.ecr.REGION.amazonaws.com/hub/rungutancommunity/bash:1.13.2
 ```
 
 ## Final thoughts
