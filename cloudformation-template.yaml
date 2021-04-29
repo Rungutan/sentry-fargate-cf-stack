@@ -5530,7 +5530,8 @@ Resources:
         - Name: sentry-snuba-migrations
           Image:
             Ref: SnubaImage
-          Entrypoint: ["snuba", "migrations", "migrate", "--force"]
+          Entrypoint: ["/usr/src/snuba/docker_entrypoint.sh"]
+          Command: ["snuba", "migrations", "migrate", "--force"]
           Secrets:
             - Name: POSTGRES_PASSWORD
               ValueFrom:
