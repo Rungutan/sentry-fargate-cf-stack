@@ -1330,6 +1330,8 @@ Resources:
             min.insync.replicas = {event['ResourceProperties']['min_insync_replicas']}
             num.network.threads = {event['ResourceProperties']['num_network_threads']}
             num.partitions = {event['ResourceProperties']['num_partitions']}
+            message.max.bytes = {event['ResourceProperties']['message_max_bytes']}
+            log.message.timestamp.type = {event['ResourceProperties']['message_timestamp_type']}
             """
 
               try:
@@ -1379,6 +1381,8 @@ Resources:
       min_insync_replicas: "1"
       num_network_threads: "3"
       num_partitions: "1"
+      message_max_bytes: "50000000"
+      message_timestamp_type: "LogAppendTime"
 
   KafkaCluster:
     Type: AWS::MSK::Cluster
