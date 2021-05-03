@@ -4325,7 +4325,7 @@ Resources:
         - Name: sentry-snuba-events-consumer
           Image:
             Ref: SnubaImage
-          Entrypoint: [REMOVE "snuba", "consumer", "--storage", "events", "--auto-offset-reset=latest", "--max-batch-time-ms", "750"]
+          Entrypoint: ["snuba", "consumer", "--storage", "events", "--auto-offset-reset=latest", "--max-batch-time-ms", "750"]
           Secrets:
             - Name: POSTGRES_PASSWORD
               ValueFrom:
