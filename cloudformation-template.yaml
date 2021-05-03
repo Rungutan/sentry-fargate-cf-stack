@@ -1320,8 +1320,7 @@ Resources:
             min.insync.replicas = {event['ResourceProperties']['min_insync_replicas']}
             num.network.threads = {event['ResourceProperties']['num_network_threads']}
             num.partitions = {event['ResourceProperties']['num_partitions']}
-            message.max.bytes = {event['ResourceProperties']['message_and_request_max_bytes']}
-            socket.request.max.bytes = {event['ResourceProperties']['message_and_request_max_bytes']}            
+            message.max.bytes = {event['ResourceProperties']['message_max_bytes']}          
             log.message.timestamp.type = {event['ResourceProperties']['message_timestamp_type']}
             log.retention.hours = {event['ResourceProperties']['log_retention_hours']}
             """
@@ -1373,7 +1372,7 @@ Resources:
       min_insync_replicas: "1"
       num_network_threads: "3"
       num_partitions: "1"
-      message_and_request_max_bytes: "50000000"
+      message_max_bytes: "50000000"
       message_timestamp_type: "LogAppendTime"
       log_retention_hours: "24"
 
