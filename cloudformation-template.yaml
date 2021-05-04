@@ -99,6 +99,10 @@ Parameters:
     Default: '100'
     Description: Size in GB of the root volume for Kafka instances
 
+  KafkaLogRetentionHours:
+    Type: Number
+    Default: 24
+
   # RDS Postres variables
   PostgresDbName:
     Default: "sentry"
@@ -481,6 +485,7 @@ Metadata:
           - KafkaInstanceType
           - KafkaVersion
           - KafkaInstanceRootVolumeSize
+          - KafkaLogRetentionHours
 
       - Label:
           default: Postgres variables
@@ -1311,9 +1316,12 @@ Resources:
             from datetime import datetime
 
             def lambda_handler(event, context):
+              print(event);
               data = {}
 
-              server_properties = f"""auto.create.topics.enable = {event['ResourceProperties']['auto_create_topics_enable']}
+              # ResourceProperties are only available during create or update
+              if event['RequestType'] == 'Create' or event['RequestType'] == 'Update':
+                server_properties = f"""auto.create.topics.enable = {event['ResourceProperties']['auto_create_topics_enable']}
             delete.topic.enable = {event['ResourceProperties']['delete_topic_enable']}
             default.replication.factor = {event['ResourceProperties']['default_replication_factor']}
             min.insync.replicas = {event['ResourceProperties']['min_insync_replicas']}
@@ -1328,8 +1336,8 @@ Resources:
               try:
                 kafka_client = boto3.client('kafka',region_name="${AWS::Region}")
 
+                # create a new config version
                 if event['RequestType'] == 'Create':
-                  
                   response = kafka_client.create_configuration(
                     KafkaVersions=["${KafkaVersion}"],
                     Name="${AWS::StackName}",
@@ -1343,10 +1351,17 @@ Resources:
                   if "Configurations" in response_list:
                     for config in response_list["Configurations"]:
                       if config["Name"] == "${AWS::StackName}":
-                        response = kafka_client.delete_configuration(Arn=config["Arn"])
+                        try:
+                          response = kafka_client.delete_configuration(Arn=config["Arn"])
+                        except Exception as e:
+                          print(str(e))
+                          data["Reason"] = str(e)
+                          # ignore the exceptions that are thrown because the config is in use
+                          cfnresponse.send(event, context, cfnresponse.SUCCESS, data)
                   data["Reason"] = "OK"
 
                 else:
+                  # update an existing config
                   response_list = kafka_client.list_configurations(MaxResults=100)
                   if "Configurations" in response_list:
                     for config in response_list["Configurations"]:
@@ -1374,7 +1389,8 @@ Resources:
       num_partitions: "1"
       message_and_request_max_bytes: "50000000"
       message_timestamp_type: "LogAppendTime"
-      log_retention_hours: "24"
+      log_retention_hours:
+        Ref: KafkaLogRetentionHours
 
   KafkaCluster:
     Type: AWS::MSK::Cluster
