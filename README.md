@@ -322,7 +322,7 @@ repositories:
 
 #### Example image parameters
 ```
-ACCOUNTID.dkr.ecr.REGION.amazonaws.com/hub/rungutancommunity/bash:1.13.2
+ACCOUNTID.dkr.ecr.REGION.amazonaws.com/hub/rungutancommunity/bash:1.13.3
 ```
 
 ### Connecting to a ECS Fargate container using aws cli exec-command

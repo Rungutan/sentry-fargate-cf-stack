@@ -179,7 +179,7 @@ Parameters:
   # OpsWorks ClickHouse variables
   ClickHouseCookbookUrl:
     Type: String
-    Default: https://github.com/Rungutan/sentry-fargate-cf-stack/releases/download/1.13.2/clickhouse-1.13.2.tar.gz
+    Default: https://github.com/Rungutan/sentry-fargate-cf-stack/releases/download/1.13.3/clickhouse-1.13.3.tar.gz
     
   ClickHouseInstanceType:
     Type: String
@@ -207,23 +207,23 @@ Parameters:
 
   SentryImage:
     Type: String
-    Default: rungutancommunity/sentry-base:1.13.2
+    Default: rungutancommunity/sentry-base:1.13.3
 
   SnubaImage:
     Type: String
-    Default: rungutancommunity/sentry-snuba:1.13.2
+    Default: rungutancommunity/sentry-snuba:1.13.3
 
   RelayImage:
     Type: String
-    Default: rungutancommunity/sentry-relay:1.13.2
+    Default: rungutancommunity/sentry-relay:1.13.3
 
   BashImage:
     Type: String
-    Default: rungutancommunity/bash:1.13.2
+    Default: rungutancommunity/bash:1.13.3
 
   ClickHouseImage:
     Type: String
-    Default: rungutancommunity/clickhouse-client:1.13.2
+    Default: rungutancommunity/clickhouse-client:1.13.3
 
   MinCountSnubaApi:
     Type: String
