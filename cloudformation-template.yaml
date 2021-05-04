@@ -99,6 +99,10 @@ Parameters:
     Default: '100'
     Description: Size in GB of the root volume for Kafka instances
 
+  KafkaLogRetentionHours:
+    Type: Number
+    Default: 24
+
   # RDS Postres variables
   PostgresDbName:
     Default: "sentry"
@@ -281,19 +285,27 @@ Parameters:
     Type: String
     Default: "10"
 
+  MinCountSentrySubscriptionConsumerEvents:
+    Type: String
+    Default: "1"
+
+  MaxCountSentrySubscriptionConsumerEvents:
+    Type: String
+    Default: "10"
+
+  MinCountSentrySubscriptionConsumerTransactions:
+    Type: String
+    Default: "1"
+
+  MaxCountSentrySubscriptionConsumerTransactions:
+    Type: String
+    Default: "10"
+
   MinCountSnubaSessionsConsumer:
     Type: String
     Default: "1"
 
   MaxCountSnubaSessionsConsumer:
-    Type: String
-    Default: "10"
-
-  MinCountSnubaEventsConsumer:
-    Type: String
-    Default: "1"
-
-  MaxCountSnubaEventsConsumer:
     Type: String
     Default: "10"
 
@@ -313,11 +325,35 @@ Parameters:
     Type: String
     Default: "10"
 
-  MinCountSnubaEventsReplacer:
+  MinCountSnubaReplacer:
     Type: String
     Default: "1"
 
-  MaxCountSnubaEventsReplacer:
+  MaxCountSnubaReplacer:
+    Type: String
+    Default: "10"
+
+  MinCountSnubaSubscriptionConsumerEvents:
+    Type: String
+    Default: "1"
+
+  MaxCountSnubaSubscriptionConsumerEvents:
+    Type: String
+    Default: "10"
+
+  MinCountSnubaSubscriptionConsumerTransactions:
+    Type: String
+    Default: "1"
+
+  MaxCountSnubaSubscriptionConsumerTransactions:
+    Type: String
+    Default: "10"
+
+  MinCountSnubaConsumer:
+    Type: String
+    Default: "1"
+
+  MaxCountSnubaConsumer:
     Type: String
     Default: "10"
 
@@ -449,6 +485,7 @@ Metadata:
           - KafkaInstanceType
           - KafkaVersion
           - KafkaInstanceRootVolumeSize
+          - KafkaLogRetentionHours
 
       - Label:
           default: Postgres variables
@@ -496,16 +533,24 @@ Metadata:
           - MaxCountSentryIngestTransactions
           - MinCountSentryPostProcessForward
           - MaxCountSentryPostProcessForward
+          - MinCountSentrySubscriptionConsumerEvents
+          - MaxCountSentrySubscriptionConsumerEvents
+          - MinCountSentrySubscriptionConsumerTransactions
+          - MaxCountSentrySubscriptionConsumerTransactions
           - MinCountSnubaSessionsConsumer
           - MaxCountSnubaSessionsConsumer
-          - MinCountSnubaEventsConsumer
-          - MaxCountSnubaEventsConsumer
           - MinCountSnubaOutcomesConsumer
           - MaxCountSnubaOutcomesConsumer
           - MinCountSnubaTransactionsConsumer
           - MaxCountSnubaTransactionsConsumer
-          - MinCountSnubaEventsReplacer
-          - MaxCountSnubaEventsReplacer
+          - MinCountSnubaReplacer
+          - MaxCountSnubaReplacer
+          - MinCountSnubaSubscriptionConsumerEvents
+          - MaxCountSnubaSubscriptionConsumerEvents
+          - MinCountSnubaSubscriptionConsumerTransactions
+          - MaxCountSnubaSubscriptionConsumerTransactions
+          - MinCountSnubaConsumer
+          - MaxCountSnubaConsumer
           - MinCountSentryWorkers
           - MaxCountSentryWorkers
           - SentrySystemSecretKey
@@ -1271,22 +1316,28 @@ Resources:
             from datetime import datetime
 
             def lambda_handler(event, context):
-              # This comment was added to force an update on this function's code
+              print(event);
               data = {}
 
-              server_properties = f"""auto.create.topics.enable = {event['ResourceProperties']['auto_create_topics_enable']}
+              # ResourceProperties are only available during create or update
+              if event['RequestType'] == 'Create' or event['RequestType'] == 'Update':
+                server_properties = f"""auto.create.topics.enable = {event['ResourceProperties']['auto_create_topics_enable']}
             delete.topic.enable = {event['ResourceProperties']['delete_topic_enable']}
             default.replication.factor = {event['ResourceProperties']['default_replication_factor']}
             min.insync.replicas = {event['ResourceProperties']['min_insync_replicas']}
             num.network.threads = {event['ResourceProperties']['num_network_threads']}
             num.partitions = {event['ResourceProperties']['num_partitions']}
+            message.max.bytes = {event['ResourceProperties']['message_and_request_max_bytes']}
+            socket.request.max.bytes = {event['ResourceProperties']['message_and_request_max_bytes']}            
+            log.message.timestamp.type = {event['ResourceProperties']['message_timestamp_type']}
+            log.retention.hours = {event['ResourceProperties']['log_retention_hours']}
             """
 
               try:
                 kafka_client = boto3.client('kafka',region_name="${AWS::Region}")
 
+                # create a new config version
                 if event['RequestType'] == 'Create':
-                  
                   response = kafka_client.create_configuration(
                     KafkaVersions=["${KafkaVersion}"],
                     Name="${AWS::StackName}",
@@ -1300,10 +1351,17 @@ Resources:
                   if "Configurations" in response_list:
                     for config in response_list["Configurations"]:
                       if config["Name"] == "${AWS::StackName}":
-                        response = kafka_client.delete_configuration(Arn=config["Arn"])
+                        try:
+                          response = kafka_client.delete_configuration(Arn=config["Arn"])
+                        except Exception as e:
+                          print(str(e))
+                          data["Reason"] = str(e)
+                          # ignore the exceptions that are thrown because the config is in use
+                          cfnresponse.send(event, context, cfnresponse.SUCCESS, data)
                   data["Reason"] = "OK"
 
                 else:
+                  # update an existing config
                   response_list = kafka_client.list_configurations(MaxResults=100)
                   if "Configurations" in response_list:
                     for config in response_list["Configurations"]:
@@ -1329,6 +1387,10 @@ Resources:
       min_insync_replicas: "1"
       num_network_threads: "3"
       num_partitions: "1"
+      message_and_request_max_bytes: "50000000"
+      message_timestamp_type: "LogAppendTime"
+      log_retention_hours:
+        Ref: KafkaLogRetentionHours
 
   KafkaCluster:
     Type: AWS::MSK::Cluster
@@ -2259,6 +2321,13 @@ Resources:
                 - s3:CreateJob
                 - s3:HeadBucket
               Resource: "*"
+            - Effect: Allow
+              Action:
+                - ssmmessages:CreateControlChannel
+                - ssmmessages:CreateDataChannel
+                - ssmmessages:OpenControlChannel
+                - ssmmessages:OpenDataChannel
+              Resource: "*"
 
   LogGroup:
     Type: AWS::Logs::LogGroup
@@ -2396,6 +2465,7 @@ Resources:
           ContainerPort: 1218
           TargetGroupArn:
             Ref: TargetGroupSnubaApi
+      EnableExecuteCommand: true
 
   TargetGroupSnubaApi:
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
@@ -2664,6 +2734,7 @@ Resources:
           ContainerPort: 9000
           TargetGroupArn:
             Ref: TargetGroupSentryWeb
+      EnableExecuteCommand: true            
 
   TargetGroupSentryWeb:
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
@@ -2929,6 +3000,7 @@ Resources:
           ContainerPort: 3000
           TargetGroupArn:
             Ref: TargetGroupRelay
+      EnableExecuteCommand: true
 
   TargetGroupRelay:
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
@@ -3215,6 +3287,7 @@ Resources:
             - Ref: PrivateSubnet3
           SecurityGroups:
             - Ref: Ec2SecurityGroup
+      EnableExecuteCommand: true
 
   TaskDefinitionSentryIngestAttachments:
     Type: AWS::ECS::TaskDefinition
@@ -3383,6 +3456,7 @@ Resources:
             - Ref: PrivateSubnet3
           SecurityGroups:
             - Ref: Ec2SecurityGroup
+      EnableExecuteCommand: true
 
   AutoScalingTargetSentryIngestAttachments:
     Type: AWS::ApplicationAutoScaling::ScalableTarget
@@ -3597,6 +3671,7 @@ Resources:
             - Ref: PrivateSubnet3
           SecurityGroups:
             - Ref: Ec2SecurityGroup
+      EnableExecuteCommand: true
 
   AutoScalingTargetSentryIngestEvents:
     Type: AWS::ApplicationAutoScaling::ScalableTarget
@@ -3811,6 +3886,7 @@ Resources:
             - Ref: PrivateSubnet3
           SecurityGroups:
             - Ref: Ec2SecurityGroup
+      EnableExecuteCommand: true
 
   AutoScalingTargetSentryIngestTransactions:
     Type: AWS::ApplicationAutoScaling::ScalableTarget
@@ -4025,6 +4101,7 @@ Resources:
             - Ref: PrivateSubnet3
           SecurityGroups:
             - Ref: Ec2SecurityGroup
+      EnableExecuteCommand: true
 
   AutoScalingTargetSentryPostProcessForward:
     Type: AWS::ApplicationAutoScaling::ScalableTarget
@@ -4192,6 +4269,7 @@ Resources:
             - Ref: PrivateSubnet3
           SecurityGroups:
             - Ref: Ec2SecurityGroup
+      EnableExecuteCommand: true
 
   AutoScalingTargetSnubaSessionsConsumer:
     Type: AWS::ApplicationAutoScaling::ScalableTarget
@@ -4239,173 +4317,6 @@ Resources:
         PredefinedMetricSpecification: 
           PredefinedMetricType: ECSServiceAverageMemoryUtilization
 
-  TaskDefinitionSnubaEventsConsumer:
-    Type: AWS::ECS::TaskDefinition
-    Properties:
-      NetworkMode: awsvpc
-      RequiresCompatibilities:
-        - FARGATE
-      Cpu: "256"
-      Memory: 0.5GB
-      ExecutionRoleArn:
-        Fn::GetAtt: ExecutionRole.Arn
-      TaskRoleArn:
-        Fn::GetAtt: TaskRole.Arn
-      ContainerDefinitions:
-        - Name: sentry-snuba-events-consumer
-          Image:
-            Ref: SnubaImage
-          Entrypoint: ["snuba", "consumer", "--storage", "events", "--auto-offset-reset=latest", "--max-batch-time-ms", "750"]
-          Secrets:
-            - Name: POSTGRES_PASSWORD
-              ValueFrom:
-                Ref: SecretPostgresPassword
-            - Name: SENTRY_EMAIL_PASSWORD
-              ValueFrom:
-                Ref: SecretSentryEmailPassword
-          Environment:
-            - Name: AWS_DEFAULT_REGION
-              Value:
-                Ref: AWS::Region
-            - Name: REDIS_HOST
-              Value:
-                Fn::GetAtt: ElastiCacheReplicationGroup.PrimaryEndPoint.Address
-            - Name: REDIS_PORT
-              Value: "6379"
-            - Name: CLICKHOUSE_HOST
-              Value:
-                Fn::GetAtt: ElbClickHouse.DNSName
-            - Name: CLICKHOUSE_PORT
-              Value: "9000"
-            - Name: CLICKHOUSE_HTTP_PORT
-              Value: "8123"
-            - Name: CLICKHOUSE_SINGLE_NODE
-              Value: "true"
-            - Name: CLICKHOUSE_DATABASE
-              Value: "default"
-            - Name: KAFKA_BROKER_1
-              Value:
-                Fn::GetAtt: KafkaGetBrokersLambdaResult.KafkaBroker1
-            - Name: KAFKA_BROKER_2
-              Value:
-                Fn::GetAtt: KafkaGetBrokersLambdaResult.KafkaBroker2
-            - Name: KAFKA_BROKER_3
-              Value:
-                Fn::GetAtt: KafkaGetBrokersLambdaResult.KafkaBroker3
-            - Name: DEFAULT_BROKERS
-              Value:
-                Fn::GetAtt: KafkaGetBrokersLambdaResult.BootstrapBrokerString
-            - Name: POSTGRES_HOST
-              Value:
-                Fn::GetAtt: RDSCluster.Endpoint.Address
-            - Name: POSTGRES_PORT
-              Value: "5432"
-            - Name: POSTGRES_DB
-              Value:
-                Ref: PostgresDbName
-            - Name: POSTGRES_USER
-              Value:
-                Ref: PostgresDbUsername
-            - Name: SENTRY_EMAIL_BACKEND
-              Value:
-                Ref: SentryEmailBackend
-            - Name: SENTRY_EMAIL_USERNAME
-              Value:
-                Ref: SentryEmailUsername
-            - Name: SENTRY_EMAIL_PORT
-              Value:
-                Ref: SentryEmailPort
-            - Name: SENTRY_EMAIL_HOST
-              Value:
-                Ref: SentryEmailHost
-            - Name: SENTRY_EMAIL_FROM
-              Value:
-                Ref: SentryEmailFrom
-            - Name: SENTRY_EMAIL_USE_TLS
-              Value:
-                Ref: SentryEmailUseTls
-            - Name: SENTRY_EMAIL_USE_SSL
-              Value:
-                Ref: SentryEmailUseSsl
-          LogConfiguration:
-            LogDriver: awslogs
-            Options:
-              awslogs-region:
-                Ref: AWS::Region
-              awslogs-group:
-                Ref: LogGroup
-              awslogs-stream-prefix: ecs
-
-  ServiceSnubaEventsConsumer:
-    Type: AWS::ECS::Service
-    Properties:
-      PlatformVersion: '1.4.0'
-      Cluster:
-        Ref: ClusterWorkers
-      TaskDefinition:
-        Ref: TaskDefinitionSnubaEventsConsumer
-      DeploymentConfiguration:
-        MinimumHealthyPercent: 100
-        MaximumPercent: 200
-      DesiredCount:
-        Ref: MinCountSnubaEventsConsumer
-      PropagateTags: SERVICE
-      NetworkConfiguration: 
-        AwsvpcConfiguration:
-          AssignPublicIp: DISABLED
-          Subnets:
-            - Ref: PrivateSubnet1
-            - Ref: PrivateSubnet2
-            - Ref: PrivateSubnet3
-          SecurityGroups:
-            - Ref: Ec2SecurityGroup
-
-  AutoScalingTargetSnubaEventsConsumer:
-    Type: AWS::ApplicationAutoScaling::ScalableTarget
-    Properties:
-      MaxCapacity:
-        Ref: MaxCountSnubaEventsConsumer
-      MinCapacity:
-        Ref: MinCountSnubaEventsConsumer
-      ResourceId:
-        Fn::Sub: service/${ClusterWorkers}/${ServiceSnubaEventsConsumer.Name}
-      RoleARN:
-        Fn::GetAtt: ScalingRole.Arn
-      ScalableDimension: ecs:service:DesiredCount
-      ServiceNamespace: ecs
-
-  CpuAutoScalingPolicySnubaEventsConsumer:
-    Type: AWS::ApplicationAutoScaling::ScalingPolicy
-    Properties:
-      PolicyName:
-        Fn::Sub: ${AWS::StackName}-Cpu-SnubaEventsConsumer
-      PolicyType: TargetTrackingScaling
-      ScalingTargetId:
-        Ref: AutoScalingTargetSnubaEventsConsumer
-      TargetTrackingScalingPolicyConfiguration:
-        DisableScaleIn: false
-        TargetValue: 40
-        ScaleInCooldown: 600
-        ScaleOutCooldown: 60
-        PredefinedMetricSpecification: 
-          PredefinedMetricType: ECSServiceAverageCPUUtilization
-
-  RamAutoScalingPolicySnubaEventsConsumer:
-    Type: AWS::ApplicationAutoScaling::ScalingPolicy
-    Properties:
-      PolicyName:
-        Fn::Sub: ${AWS::StackName}-Ram-SnubaEventsConsumer
-      PolicyType: TargetTrackingScaling
-      ScalingTargetId:
-        Ref: AutoScalingTargetSnubaEventsConsumer
-      TargetTrackingScalingPolicyConfiguration:
-        DisableScaleIn: false
-        TargetValue: 40 
-        ScaleInCooldown: 600
-        ScaleOutCooldown: 60
-        PredefinedMetricSpecification: 
-          PredefinedMetricType: ECSServiceAverageMemoryUtilization
-
   TaskDefinitionSnubaOutcomesConsumer:
     Type: AWS::ECS::TaskDefinition
     Properties:
@@ -4422,7 +4333,7 @@ Resources:
         - Name: sentry-snuba-outcomes-consumer
           Image:
             Ref: SnubaImage
-          Entrypoint: ["snuba", "consumer", "--storage", "outcomes_raw", "--auto-offset-reset=latest", "--max-batch-size", "3"]
+          Entrypoint: ["snuba", "consumer", "--storage", "outcomes_raw", "--auto-offset-reset=earliest", "--max-batch-time-ms", "750"]
           Secrets:
             - Name: POSTGRES_PASSWORD
               ValueFrom:
@@ -4526,6 +4437,7 @@ Resources:
             - Ref: PrivateSubnet3
           SecurityGroups:
             - Ref: Ec2SecurityGroup
+      EnableExecuteCommand: true
 
   AutoScalingTargetSnubaOutcomesConsumer:
     Type: AWS::ApplicationAutoScaling::ScalableTarget
@@ -4573,6 +4485,174 @@ Resources:
         PredefinedMetricSpecification: 
           PredefinedMetricType: ECSServiceAverageMemoryUtilization
 
+  TaskDefinitionSnubaSubscriptionConsumerTransactions:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      NetworkMode: awsvpc
+      RequiresCompatibilities:
+        - FARGATE
+      Cpu: "256"
+      Memory: 0.5GB
+      ExecutionRoleArn:
+        Fn::GetAtt: ExecutionRole.Arn
+      TaskRoleArn:
+        Fn::GetAtt: TaskRole.Arn
+      ContainerDefinitions:
+        - Name: sentry-snuba-subscription-consumer-transactions
+          Image:
+            Ref: SnubaImage
+          Entrypoint: ["snuba", "subscriptions", "--auto-offset-reset=latest", "--consumer-group=snuba-transactions-subscriptions-consumers", "--topic=events", "--result-topic=transactionss-subscription-results", "--dataset=transactions", "--commit-log-topic=snuba-commit-log", "--commit-log-group=transactions_group", "--delay-seconds=60", "--schedule-ttl=60"]
+          Secrets:
+            - Name: POSTGRES_PASSWORD
+              ValueFrom:
+                Ref: SecretPostgresPassword
+            - Name: SENTRY_EMAIL_PASSWORD
+              ValueFrom:
+                Ref: SecretSentryEmailPassword
+          Environment:
+            - Name: AWS_DEFAULT_REGION
+              Value:
+                Ref: AWS::Region
+            - Name: REDIS_HOST
+              Value:
+                Fn::GetAtt: ElastiCacheReplicationGroup.PrimaryEndPoint.Address
+            - Name: REDIS_PORT
+              Value: "6379"
+            - Name: CLICKHOUSE_HOST
+              Value:
+                Fn::GetAtt: ElbClickHouse.DNSName
+            - Name: CLICKHOUSE_PORT
+              Value: "9000"
+            - Name: CLICKHOUSE_HTTP_PORT
+              Value: "8123"
+            - Name: CLICKHOUSE_SINGLE_NODE
+              Value: "true"
+            - Name: CLICKHOUSE_DATABASE
+              Value: "default"
+            - Name: KAFKA_BROKER_1
+              Value:
+                Fn::GetAtt: KafkaGetBrokersLambdaResult.KafkaBroker1
+            - Name: KAFKA_BROKER_2
+              Value:
+                Fn::GetAtt: KafkaGetBrokersLambdaResult.KafkaBroker2
+            - Name: KAFKA_BROKER_3
+              Value:
+                Fn::GetAtt: KafkaGetBrokersLambdaResult.KafkaBroker3
+            - Name: DEFAULT_BROKERS
+              Value:
+                Fn::GetAtt: KafkaGetBrokersLambdaResult.BootstrapBrokerString
+            - Name: POSTGRES_HOST
+              Value:
+                Fn::GetAtt: RDSCluster.Endpoint.Address
+            - Name: POSTGRES_PORT
+              Value: "5432"
+            - Name: POSTGRES_DB
+              Value:
+                Ref: PostgresDbName
+            - Name: POSTGRES_USER
+              Value:
+                Ref: PostgresDbUsername
+            - Name: SENTRY_EMAIL_BACKEND
+              Value:
+                Ref: SentryEmailBackend
+            - Name: SENTRY_EMAIL_USERNAME
+              Value:
+                Ref: SentryEmailUsername
+            - Name: SENTRY_EMAIL_PORT
+              Value:
+                Ref: SentryEmailPort
+            - Name: SENTRY_EMAIL_HOST
+              Value:
+                Ref: SentryEmailHost
+            - Name: SENTRY_EMAIL_FROM
+              Value:
+                Ref: SentryEmailFrom
+            - Name: SENTRY_EMAIL_USE_TLS
+              Value:
+                Ref: SentryEmailUseTls
+            - Name: SENTRY_EMAIL_USE_SSL
+              Value:
+                Ref: SentryEmailUseSsl
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-region:
+                Ref: AWS::Region
+              awslogs-group:
+                Ref: LogGroup
+              awslogs-stream-prefix: ecs
+
+  ServiceSnubaSubscriptionConsumerTransactions:
+    Type: AWS::ECS::Service
+    Properties:
+      PlatformVersion: '1.4.0'
+      Cluster:
+        Ref: ClusterWorkers
+      TaskDefinition:
+        Ref: TaskDefinitionSnubaSubscriptionConsumerTransactions
+      DeploymentConfiguration:
+        MinimumHealthyPercent: 100
+        MaximumPercent: 200
+      DesiredCount:
+        Ref: MinCountSnubaSubscriptionConsumerTransactions
+      PropagateTags: SERVICE
+      NetworkConfiguration: 
+        AwsvpcConfiguration:
+          AssignPublicIp: DISABLED
+          Subnets:
+            - Ref: PrivateSubnet1
+            - Ref: PrivateSubnet2
+            - Ref: PrivateSubnet3
+          SecurityGroups:
+            - Ref: Ec2SecurityGroup
+      EnableExecuteCommand: true
+
+  AutoScalingTargetSnubaSubscriptionConsumerTransactions:
+    Type: AWS::ApplicationAutoScaling::ScalableTarget
+    Properties:
+      MaxCapacity:
+        Ref: MaxCountSnubaSubscriptionConsumerTransactions
+      MinCapacity:
+        Ref: MinCountSnubaSubscriptionConsumerTransactions
+      ResourceId:
+        Fn::Sub: service/${ClusterWorkers}/${ServiceSnubaSubscriptionConsumerTransactions.Name}
+      RoleARN:
+        Fn::GetAtt: ScalingRole.Arn
+      ScalableDimension: ecs:service:DesiredCount
+      ServiceNamespace: ecs
+
+  CpuAutoScalingPolicySnubaSubscriptionConsumerTransactions:
+    Type: AWS::ApplicationAutoScaling::ScalingPolicy
+    Properties:
+      PolicyName:
+        Fn::Sub: ${AWS::StackName}-Cpu-SnubaSubscriptionConsumerTransactions
+      PolicyType: TargetTrackingScaling
+      ScalingTargetId:
+        Ref: AutoScalingTargetSnubaSubscriptionConsumerTransactions
+      TargetTrackingScalingPolicyConfiguration:
+        DisableScaleIn: false
+        TargetValue: 40
+        ScaleInCooldown: 600
+        ScaleOutCooldown: 60
+        PredefinedMetricSpecification: 
+          PredefinedMetricType: ECSServiceAverageCPUUtilization
+
+  RamAutoScalingPolicySnubaSubscriptionConsumerTransactions:
+    Type: AWS::ApplicationAutoScaling::ScalingPolicy
+    Properties:
+      PolicyName:
+        Fn::Sub: ${AWS::StackName}-Ram-SnubaSubscriptionConsumerTransactions
+      PolicyType: TargetTrackingScaling
+      ScalingTargetId:
+        Ref: AutoScalingTargetSnubaSubscriptionConsumerTransactions
+      TargetTrackingScalingPolicyConfiguration:
+        DisableScaleIn: false
+        TargetValue: 40 
+        ScaleInCooldown: 600
+        ScaleOutCooldown: 60
+        PredefinedMetricSpecification: 
+          PredefinedMetricType: ECSServiceAverageMemoryUtilization
+
   TaskDefinitionSnubaTransactionsConsumer:
     Type: AWS::ECS::TaskDefinition
     Properties:
@@ -4589,7 +4669,7 @@ Resources:
         - Name: sentry-snuba-transactions-consumer
           Image:
             Ref: SnubaImage
-          Entrypoint: ["snuba", "consumer", "--storage", "transactions", "--consumer-group", "transactions_group", "--auto-offset-reset=latest", "--max-batch-time-ms", "750"]
+          Entrypoint: ["snuba", "consumer", "--storage", "transactions", "--consumer-group", "transactions_group", "--auto-offset-reset=latest", "--max-batch-time-ms", "750", "--commit-log-topic=snuba-commit-log"]
           Secrets:
             - Name: POSTGRES_PASSWORD
               ValueFrom:
@@ -4693,6 +4773,7 @@ Resources:
             - Ref: PrivateSubnet3
           SecurityGroups:
             - Ref: Ec2SecurityGroup
+      EnableExecuteCommand: true
 
   AutoScalingTargetSnubaTransactionsConsumer:
     Type: AWS::ApplicationAutoScaling::ScalableTarget
@@ -4741,7 +4822,7 @@ Resources:
           PredefinedMetricType: ECSServiceAverageMemoryUtilization      
 
 
-  TaskDefinitionSnubaEventsReplacer:
+  TaskDefinitionSnubaReplacer:
     Type: AWS::ECS::TaskDefinition
     Properties:
       NetworkMode: awsvpc
@@ -4754,10 +4835,10 @@ Resources:
       TaskRoleArn:
         Fn::GetAtt: TaskRole.Arn
       ContainerDefinitions:
-        - Name: sentry-snuba-events-replacer
+        - Name: sentry-snuba-replacer
           Image:
             Ref: SnubaImage
-          Entrypoint: ["snuba", "replacer", "--storage", "events", "--auto-offset-reset=latest", "--max-batch-size", "3"]
+          Entrypoint: ["snuba", "replacer", "--storage", "errors", "--auto-offset-reset=latest", "--max-batch-size", "3"]
           Secrets:
             - Name: POSTGRES_PASSWORD
               ValueFrom:
@@ -4838,19 +4919,19 @@ Resources:
                 Ref: LogGroup
               awslogs-stream-prefix: ecs
 
-  ServiceSnubaEventsReplacer:
+  ServiceSnubaReplacer:
     Type: AWS::ECS::Service
     Properties:
       PlatformVersion: '1.4.0'
       Cluster:
         Ref: ClusterWorkers
       TaskDefinition:
-        Ref: TaskDefinitionSnubaEventsReplacer
+        Ref: TaskDefinitionSnubaReplacer
       DeploymentConfiguration:
         MinimumHealthyPercent: 100
         MaximumPercent: 200
       DesiredCount:
-        Ref: MinCountSnubaEventsReplacer
+        Ref: MinCountSnubaReplacer
       PropagateTags: SERVICE
       NetworkConfiguration: 
         AwsvpcConfiguration:
@@ -4861,29 +4942,30 @@ Resources:
             - Ref: PrivateSubnet3
           SecurityGroups:
             - Ref: Ec2SecurityGroup
+      EnableExecuteCommand: true
 
-  AutoScalingTargetSnubaEventsReplacer:
+  AutoScalingTargetSnubaReplacer:
     Type: AWS::ApplicationAutoScaling::ScalableTarget
     Properties:
       MaxCapacity:
-        Ref: MaxCountSnubaEventsReplacer
+        Ref: MaxCountSnubaReplacer
       MinCapacity:
-        Ref: MinCountSnubaEventsReplacer
+        Ref: MinCountSnubaReplacer
       ResourceId:
-        Fn::Sub: service/${ClusterWorkers}/${ServiceSnubaEventsReplacer.Name}
+        Fn::Sub: service/${ClusterWorkers}/${ServiceSnubaReplacer.Name}
       RoleARN:
         Fn::GetAtt: ScalingRole.Arn
       ScalableDimension: ecs:service:DesiredCount
       ServiceNamespace: ecs
 
-  CpuAutoScalingPolicySnubaEventsReplacer:
+  CpuAutoScalingPolicySnubaReplacer:
     Type: AWS::ApplicationAutoScaling::ScalingPolicy
     Properties:
       PolicyName:
-        Fn::Sub: ${AWS::StackName}-Cpu-SnubaEventsReplacer
+        Fn::Sub: ${AWS::StackName}-Cpu-SnubaReplacer
       PolicyType: TargetTrackingScaling
       ScalingTargetId:
-        Ref: AutoScalingTargetSnubaEventsReplacer
+        Ref: AutoScalingTargetSnubaReplacer
       TargetTrackingScalingPolicyConfiguration:
         DisableScaleIn: false
         TargetValue: 40
@@ -4892,14 +4974,350 @@ Resources:
         PredefinedMetricSpecification: 
           PredefinedMetricType: ECSServiceAverageCPUUtilization
 
-  RamAutoScalingPolicySnubaEventsReplacer:
+  RamAutoScalingPolicySnubaReplacer:
     Type: AWS::ApplicationAutoScaling::ScalingPolicy
     Properties:
       PolicyName:
-        Fn::Sub: ${AWS::StackName}-Ram-SnubaEventsReplacer
+        Fn::Sub: ${AWS::StackName}-Ram-SnubaReplacer
       PolicyType: TargetTrackingScaling
       ScalingTargetId:
-        Ref: AutoScalingTargetSnubaEventsReplacer
+        Ref: AutoScalingTargetSnubaReplacer
+      TargetTrackingScalingPolicyConfiguration:
+        DisableScaleIn: false
+        TargetValue: 40 
+        ScaleInCooldown: 600
+        ScaleOutCooldown: 60
+        PredefinedMetricSpecification: 
+          PredefinedMetricType: ECSServiceAverageMemoryUtilization
+
+  TaskDefinitionSnubaSubscriptionConsumerEvents:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      NetworkMode: awsvpc
+      RequiresCompatibilities:
+        - FARGATE
+      Cpu: "256"
+      Memory: 0.5GB
+      ExecutionRoleArn:
+        Fn::GetAtt: ExecutionRole.Arn
+      TaskRoleArn:
+        Fn::GetAtt: TaskRole.Arn
+      ContainerDefinitions:
+        - Name: sentry-snuba-subscription-consumer-events
+          Image:
+            Ref: SnubaImage
+          Entrypoint: ["snuba", "subscriptions", "--auto-offset-reset=latest", "--consumer-group=snuba-events-subscriptions-consumers", "--topic=events", "--result-topic=events-subscription-results", "--dataset=events", "--commit-log-topic=snuba-commit-log", "--commit-log-group=snuba-consumers", "--delay-seconds=60", "--schedule-ttl=60"]
+          Secrets:
+            - Name: POSTGRES_PASSWORD
+              ValueFrom:
+                Ref: SecretPostgresPassword
+            - Name: SENTRY_EMAIL_PASSWORD
+              ValueFrom:
+                Ref: SecretSentryEmailPassword
+          Environment:
+            - Name: AWS_DEFAULT_REGION
+              Value:
+                Ref: AWS::Region
+            - Name: REDIS_HOST
+              Value:
+                Fn::GetAtt: ElastiCacheReplicationGroup.PrimaryEndPoint.Address
+            - Name: REDIS_PORT
+              Value: "6379"
+            - Name: CLICKHOUSE_HOST
+              Value:
+                Fn::GetAtt: ElbClickHouse.DNSName
+            - Name: CLICKHOUSE_PORT
+              Value: "9000"
+            - Name: CLICKHOUSE_HTTP_PORT
+              Value: "8123"
+            - Name: CLICKHOUSE_SINGLE_NODE
+              Value: "true"
+            - Name: CLICKHOUSE_DATABASE
+              Value: "default"
+            - Name: KAFKA_BROKER_1
+              Value:
+                Fn::GetAtt: KafkaGetBrokersLambdaResult.KafkaBroker1
+            - Name: KAFKA_BROKER_2
+              Value:
+                Fn::GetAtt: KafkaGetBrokersLambdaResult.KafkaBroker2
+            - Name: KAFKA_BROKER_3
+              Value:
+                Fn::GetAtt: KafkaGetBrokersLambdaResult.KafkaBroker3
+            - Name: DEFAULT_BROKERS
+              Value:
+                Fn::GetAtt: KafkaGetBrokersLambdaResult.BootstrapBrokerString
+            - Name: POSTGRES_HOST
+              Value:
+                Fn::GetAtt: RDSCluster.Endpoint.Address
+            - Name: POSTGRES_PORT
+              Value: "5432"
+            - Name: POSTGRES_DB
+              Value:
+                Ref: PostgresDbName
+            - Name: POSTGRES_USER
+              Value:
+                Ref: PostgresDbUsername
+            - Name: SENTRY_EMAIL_BACKEND
+              Value:
+                Ref: SentryEmailBackend
+            - Name: SENTRY_EMAIL_USERNAME
+              Value:
+                Ref: SentryEmailUsername
+            - Name: SENTRY_EMAIL_PORT
+              Value:
+                Ref: SentryEmailPort
+            - Name: SENTRY_EMAIL_HOST
+              Value:
+                Ref: SentryEmailHost
+            - Name: SENTRY_EMAIL_FROM
+              Value:
+                Ref: SentryEmailFrom
+            - Name: SENTRY_EMAIL_USE_TLS
+              Value:
+                Ref: SentryEmailUseTls
+            - Name: SENTRY_EMAIL_USE_SSL
+              Value:
+                Ref: SentryEmailUseSsl
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-region:
+                Ref: AWS::Region
+              awslogs-group:
+                Ref: LogGroup
+              awslogs-stream-prefix: ecs
+
+  ServiceSnubaSubscriptionConsumerEvents:
+    Type: AWS::ECS::Service
+    Properties:
+      PlatformVersion: '1.4.0'
+      Cluster:
+        Ref: ClusterWorkers
+      TaskDefinition:
+        Ref: TaskDefinitionSnubaSubscriptionConsumerEvents
+      DeploymentConfiguration:
+        MinimumHealthyPercent: 100
+        MaximumPercent: 200
+      DesiredCount:
+        Ref: MinCountSnubaSubscriptionConsumerEvents
+      PropagateTags: SERVICE
+      NetworkConfiguration: 
+        AwsvpcConfiguration:
+          AssignPublicIp: DISABLED
+          Subnets:
+            - Ref: PrivateSubnet1
+            - Ref: PrivateSubnet2
+            - Ref: PrivateSubnet3
+          SecurityGroups:
+            - Ref: Ec2SecurityGroup
+      EnableExecuteCommand: true
+
+  AutoScalingTargetSnubaSubscriptionConsumerEvents:
+    Type: AWS::ApplicationAutoScaling::ScalableTarget
+    Properties:
+      MaxCapacity:
+        Ref: MaxCountSnubaSubscriptionConsumerEvents
+      MinCapacity:
+        Ref: MinCountSnubaSubscriptionConsumerEvents
+      ResourceId:
+        Fn::Sub: service/${ClusterWorkers}/${ServiceSnubaSubscriptionConsumerEvents.Name}
+      RoleARN:
+        Fn::GetAtt: ScalingRole.Arn
+      ScalableDimension: ecs:service:DesiredCount
+      ServiceNamespace: ecs
+
+  CpuAutoScalingPolicySnubaSubscriptionConsumerEvents:
+    Type: AWS::ApplicationAutoScaling::ScalingPolicy
+    Properties:
+      PolicyName:
+        Fn::Sub: ${AWS::StackName}-Cpu-SnubaSubscriptionConsumerEvents
+      PolicyType: TargetTrackingScaling
+      ScalingTargetId:
+        Ref: AutoScalingTargetSnubaSubscriptionConsumerEvents
+      TargetTrackingScalingPolicyConfiguration:
+        DisableScaleIn: false
+        TargetValue: 40
+        ScaleInCooldown: 600
+        ScaleOutCooldown: 60
+        PredefinedMetricSpecification: 
+          PredefinedMetricType: ECSServiceAverageCPUUtilization
+
+  RamAutoScalingPolicySnubaSubscriptionConsumerEvents:
+    Type: AWS::ApplicationAutoScaling::ScalingPolicy
+    Properties:
+      PolicyName:
+        Fn::Sub: ${AWS::StackName}-Ram-SnubaSubscriptionConsumerEvents
+      PolicyType: TargetTrackingScaling
+      ScalingTargetId:
+        Ref: AutoScalingTargetSnubaSubscriptionConsumerEvents
+      TargetTrackingScalingPolicyConfiguration:
+        DisableScaleIn: false
+        TargetValue: 40 
+        ScaleInCooldown: 600
+        ScaleOutCooldown: 60
+        PredefinedMetricSpecification: 
+          PredefinedMetricType: ECSServiceAverageMemoryUtilization
+
+  TaskDefinitionSnubaConsumer:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      NetworkMode: awsvpc
+      RequiresCompatibilities:
+        - FARGATE
+      Cpu: "256"
+      Memory: 0.5GB
+      ExecutionRoleArn:
+        Fn::GetAtt: ExecutionRole.Arn
+      TaskRoleArn:
+        Fn::GetAtt: TaskRole.Arn
+      ContainerDefinitions:
+        - Name: sentry-snuba-consumer
+          Image:
+            Ref: SnubaImage
+          Entrypoint: ["snuba", "consumer", "--storage", "errors", "--auto-offset-reset=latest", "--max-batch-time-ms", "750"]
+          Secrets:
+            - Name: POSTGRES_PASSWORD
+              ValueFrom:
+                Ref: SecretPostgresPassword
+            - Name: SENTRY_EMAIL_PASSWORD
+              ValueFrom:
+                Ref: SecretSentryEmailPassword
+          Environment:
+            - Name: AWS_DEFAULT_REGION
+              Value:
+                Ref: AWS::Region
+            - Name: REDIS_HOST
+              Value:
+                Fn::GetAtt: ElastiCacheReplicationGroup.PrimaryEndPoint.Address
+            - Name: REDIS_PORT
+              Value: "6379"
+            - Name: CLICKHOUSE_HOST
+              Value:
+                Fn::GetAtt: ElbClickHouse.DNSName
+            - Name: CLICKHOUSE_PORT
+              Value: "9000"
+            - Name: CLICKHOUSE_HTTP_PORT
+              Value: "8123"
+            - Name: CLICKHOUSE_SINGLE_NODE
+              Value: "true"
+            - Name: CLICKHOUSE_DATABASE
+              Value: "default"
+            - Name: KAFKA_BROKER_1
+              Value:
+                Fn::GetAtt: KafkaGetBrokersLambdaResult.KafkaBroker1
+            - Name: KAFKA_BROKER_2
+              Value:
+                Fn::GetAtt: KafkaGetBrokersLambdaResult.KafkaBroker2
+            - Name: KAFKA_BROKER_3
+              Value:
+                Fn::GetAtt: KafkaGetBrokersLambdaResult.KafkaBroker3
+            - Name: DEFAULT_BROKERS
+              Value:
+                Fn::GetAtt: KafkaGetBrokersLambdaResult.BootstrapBrokerString
+            - Name: POSTGRES_HOST
+              Value:
+                Fn::GetAtt: RDSCluster.Endpoint.Address
+            - Name: POSTGRES_PORT
+              Value: "5432"
+            - Name: POSTGRES_DB
+              Value:
+                Ref: PostgresDbName
+            - Name: POSTGRES_USER
+              Value:
+                Ref: PostgresDbUsername
+            - Name: SENTRY_EMAIL_BACKEND
+              Value:
+                Ref: SentryEmailBackend
+            - Name: SENTRY_EMAIL_USERNAME
+              Value:
+                Ref: SentryEmailUsername
+            - Name: SENTRY_EMAIL_PORT
+              Value:
+                Ref: SentryEmailPort
+            - Name: SENTRY_EMAIL_HOST
+              Value:
+                Ref: SentryEmailHost
+            - Name: SENTRY_EMAIL_FROM
+              Value:
+                Ref: SentryEmailFrom
+            - Name: SENTRY_EMAIL_USE_TLS
+              Value:
+                Ref: SentryEmailUseTls
+            - Name: SENTRY_EMAIL_USE_SSL
+              Value:
+                Ref: SentryEmailUseSsl
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-region:
+                Ref: AWS::Region
+              awslogs-group:
+                Ref: LogGroup
+              awslogs-stream-prefix: ecs
+
+  ServiceSnubaConsumer:
+    Type: AWS::ECS::Service
+    Properties:
+      PlatformVersion: '1.4.0'
+      Cluster:
+        Ref: ClusterWorkers
+      TaskDefinition:
+        Ref: TaskDefinitionSnubaConsumer
+      DeploymentConfiguration:
+        MinimumHealthyPercent: 100
+        MaximumPercent: 200
+      DesiredCount:
+        Ref: MinCountSnubaConsumer
+      PropagateTags: SERVICE
+      NetworkConfiguration: 
+        AwsvpcConfiguration:
+          AssignPublicIp: DISABLED
+          Subnets:
+            - Ref: PrivateSubnet1
+            - Ref: PrivateSubnet2
+            - Ref: PrivateSubnet3
+          SecurityGroups:
+            - Ref: Ec2SecurityGroup
+      EnableExecuteCommand: true
+
+  AutoScalingTargetSnubaConsumer:
+    Type: AWS::ApplicationAutoScaling::ScalableTarget
+    Properties:
+      MaxCapacity:
+        Ref: MaxCountSnubaConsumer
+      MinCapacity:
+        Ref: MinCountSnubaConsumer
+      ResourceId:
+        Fn::Sub: service/${ClusterWorkers}/${ServiceSnubaConsumer.Name}
+      RoleARN:
+        Fn::GetAtt: ScalingRole.Arn
+      ScalableDimension: ecs:service:DesiredCount
+      ServiceNamespace: ecs
+
+  CpuAutoScalingPolicySnubaConsumer:
+    Type: AWS::ApplicationAutoScaling::ScalingPolicy
+    Properties:
+      PolicyName:
+        Fn::Sub: ${AWS::StackName}-Cpu-SnubaConsumer
+      PolicyType: TargetTrackingScaling
+      ScalingTargetId:
+        Ref: AutoScalingTargetSnubaConsumer
+      TargetTrackingScalingPolicyConfiguration:
+        DisableScaleIn: false
+        TargetValue: 40
+        ScaleInCooldown: 600
+        ScaleOutCooldown: 60
+        PredefinedMetricSpecification: 
+          PredefinedMetricType: ECSServiceAverageCPUUtilization
+
+  RamAutoScalingPolicySnubaConsumer:
+    Type: AWS::ApplicationAutoScaling::ScalingPolicy
+    Properties:
+      PolicyName:
+        Fn::Sub: ${AWS::StackName}-Ram-SnubaConsumer
+      PolicyType: TargetTrackingScaling
+      ScalingTargetId:
+        Ref: AutoScalingTargetSnubaConsumer
       TargetTrackingScalingPolicyConfiguration:
         DisableScaleIn: false
         TargetValue: 40 
@@ -5071,6 +5489,7 @@ Resources:
             - Ref: PrivateSubnet3
           SecurityGroups:
             - Ref: Ec2SecurityGroup
+      EnableExecuteCommand: true
 
   AutoScalingTargetSentryWorkers:
     Type: AWS::ApplicationAutoScaling::ScalableTarget
@@ -5110,6 +5529,428 @@ Resources:
       PolicyType: TargetTrackingScaling
       ScalingTargetId:
         Ref: AutoScalingTargetSentryWorkers
+      TargetTrackingScalingPolicyConfiguration:
+        DisableScaleIn: false
+        TargetValue: 40 
+        ScaleInCooldown: 600
+        ScaleOutCooldown: 60
+        PredefinedMetricSpecification: 
+          PredefinedMetricType: ECSServiceAverageMemoryUtilization
+
+  TaskDefinitionSentrySubscriptionConsumerEvents:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      NetworkMode: awsvpc
+      RequiresCompatibilities:
+        - FARGATE
+      Cpu: "1024"
+      Memory: 2GB
+      ExecutionRoleArn:
+        Fn::GetAtt: ExecutionRole.Arn
+      TaskRoleArn:
+        Fn::GetAtt: TaskRole.Arn
+      Volumes:
+        - Name: sentry-conf-vol
+          Host: {}
+      ContainerDefinitions:
+        - Name: sentry-config
+          Image:
+            Ref: BashImage
+          Essential: false
+          Command:
+            - -c
+            - echo $SENTRY_CONFIG | base64 -d - | tee /config-sentry/config.yml
+          Environment:
+            - Name: SENTRY_CONFIG
+              Value:
+                Fn::Base64:
+                  Fn::Sub: |
+                    system.secret-key: "${SentrySystemSecretKey}"
+                    system.url-prefix: "https://${SentryDnsRecord}"
+
+                    slack.client-id: "${SentrySlackClientId}"
+                    slack.client-secret: "${SentrySlackClientSecret}"
+                    slack.legacy-app: False
+                    slack.signing-secret: "${SentrySlackSigningSecret}"
+
+                    filestore.backend: 's3'
+                    filestore.options:
+                      bucket_name: "${SentryBucket}"
+                      default_acl: "private"
+                      acl: "private"
+          MountPoints:
+            - ContainerPath: /config-sentry/
+              SourceVolume: sentry-conf-vol
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-region:
+                Ref: AWS::Region
+              awslogs-group:
+                Ref: LogGroup
+              awslogs-stream-prefix: ecs
+        - Name: subscription-consumer-events
+          Image:
+            Ref: SentryImage
+          Essential: true
+          DependsOn:
+          - Condition: COMPLETE
+            ContainerName: sentry-config
+          MountPoints:
+            - ContainerPath: /config-sentry/
+              SourceVolume: sentry-conf-vol
+          Entrypoint: ["/bin/bash"]
+          Command:
+            - "-c"
+            - "cp /config-sentry/config.yml /etc/sentry/config.yml && sentry run query-subscription-consumer --commit-batch-size 1 --topic events-subscription-results"
+          Secrets:
+            - Name: POSTGRES_PASSWORD
+              ValueFrom:
+                Ref: SecretPostgresPassword
+            - Name: SENTRY_EMAIL_PASSWORD
+              ValueFrom:
+                Ref: SecretSentryEmailPassword
+          Environment:
+            - Name: AWS_DEFAULT_REGION
+              Value:
+                Ref: AWS::Region
+            - name: C_FORCE_ROOT
+              Value: "true"
+            - Name: SNUBA
+              Value: 
+                Fn::Sub: http://${SnubaApiDnsRecord}
+            - Name: REDIS_HOST
+              Value:
+                Fn::GetAtt: ElastiCacheReplicationGroup.PrimaryEndPoint.Address
+            - Name: REDIS_PORT
+              Value: "6379"
+            - Name: CLICKHOUSE_HOST
+              Value:
+                Fn::GetAtt: ElbClickHouse.DNSName 
+            - Name: KAFKA_BROKER_1
+              Value:
+                Fn::GetAtt: KafkaGetBrokersLambdaResult.KafkaBroker1
+            - Name: KAFKA_BROKER_2
+              Value:
+                Fn::GetAtt: KafkaGetBrokersLambdaResult.KafkaBroker2
+            - Name: KAFKA_BROKER_3
+              Value:
+                Fn::GetAtt: KafkaGetBrokersLambdaResult.KafkaBroker3
+            - Name: POSTGRES_HOST
+              Value:
+                Fn::GetAtt: RDSCluster.Endpoint.Address
+            - Name: POSTGRES_PORT
+              Value: "5432"
+            - Name: POSTGRES_DB
+              Value:
+                Ref: PostgresDbName
+            - Name: POSTGRES_USER
+              Value:
+                Ref: PostgresDbUsername
+            - Name: SENTRY_EMAIL_BACKEND
+              Value:
+                Ref: SentryEmailBackend
+            - Name: SENTRY_EMAIL_USERNAME
+              Value:
+                Ref: SentryEmailUsername
+            - Name: SENTRY_EMAIL_PORT
+              Value:
+                Ref: SentryEmailPort
+            - Name: SENTRY_EMAIL_HOST
+              Value:
+                Ref: SentryEmailHost
+            - Name: SENTRY_EMAIL_FROM
+              Value:
+                Ref: SentryEmailFrom
+            - Name: SENTRY_EMAIL_USE_TLS
+              Value:
+                Ref: SentryEmailUseTls
+            - Name: SENTRY_EMAIL_USE_SSL
+              Value:
+                Ref: SentryEmailUseSsl
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-region:
+                Ref: AWS::Region
+              awslogs-group:
+                Ref: LogGroup
+              awslogs-stream-prefix: ecs
+
+  ServiceSentrySubscriptionConsumerEvents:
+    Type: AWS::ECS::Service
+    Properties:
+      PlatformVersion: '1.4.0'
+      Cluster:
+        Ref: ClusterWorkers
+      TaskDefinition:
+        Ref: TaskDefinitionSentrySubscriptionConsumerEvents
+      DeploymentConfiguration:
+        MinimumHealthyPercent: 100
+        MaximumPercent: 200
+      DesiredCount:
+        Ref: MinCountSentrySubscriptionConsumerEvents
+      PropagateTags: SERVICE
+      NetworkConfiguration: 
+        AwsvpcConfiguration:
+          AssignPublicIp: DISABLED
+          Subnets:
+            - Ref: PrivateSubnet1
+            - Ref: PrivateSubnet2
+            - Ref: PrivateSubnet3
+          SecurityGroups:
+            - Ref: Ec2SecurityGroup
+      EnableExecuteCommand: true
+
+  AutoScalingTargetSentrySubscriptionConsumerEvents:
+    Type: AWS::ApplicationAutoScaling::ScalableTarget
+    Properties:
+      MaxCapacity:
+        Ref: MaxCountSentrySubscriptionConsumerEvents
+      MinCapacity:
+        Ref: MinCountSentrySubscriptionConsumerEvents
+      ResourceId:
+        Fn::Sub: service/${ClusterWorkers}/${ServiceSentrySubscriptionConsumerEvents.Name}
+      RoleARN:
+        Fn::GetAtt: ScalingRole.Arn
+      ScalableDimension: ecs:service:DesiredCount
+      ServiceNamespace: ecs
+
+  CpuAutoScalingPolicySentrySubscriptionConsumerEvents:
+    Type: AWS::ApplicationAutoScaling::ScalingPolicy
+    Properties:
+      PolicyName:
+        Fn::Sub: ${AWS::StackName}-Cpu-SentrySubscriptionConsumerEvents
+      PolicyType: TargetTrackingScaling
+      ScalingTargetId:
+        Ref: AutoScalingTargetSentrySubscriptionConsumerEvents
+      TargetTrackingScalingPolicyConfiguration:
+        DisableScaleIn: false
+        TargetValue: 40
+        ScaleInCooldown: 600
+        ScaleOutCooldown: 60
+        PredefinedMetricSpecification: 
+          PredefinedMetricType: ECSServiceAverageCPUUtilization
+
+  RamAutoScalingPolicySentrySubscriptionConsumerEvents:
+    Type: AWS::ApplicationAutoScaling::ScalingPolicy
+    Properties:
+      PolicyName:
+        Fn::Sub: ${AWS::StackName}-Ram-SentrySubscriptionConsumerEvents
+      PolicyType: TargetTrackingScaling
+      ScalingTargetId:
+        Ref: AutoScalingTargetSentrySubscriptionConsumerEvents
+      TargetTrackingScalingPolicyConfiguration:
+        DisableScaleIn: false
+        TargetValue: 40 
+        ScaleInCooldown: 600
+        ScaleOutCooldown: 60
+        PredefinedMetricSpecification: 
+          PredefinedMetricType: ECSServiceAverageMemoryUtilization
+
+  TaskDefinitionSentrySubscriptionConsumerTransactions:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      NetworkMode: awsvpc
+      RequiresCompatibilities:
+        - FARGATE
+      Cpu: "1024"
+      Memory: 2GB
+      ExecutionRoleArn:
+        Fn::GetAtt: ExecutionRole.Arn
+      TaskRoleArn:
+        Fn::GetAtt: TaskRole.Arn
+      Volumes:
+        - Name: sentry-conf-vol
+          Host: {}
+      ContainerDefinitions:
+        - Name: sentry-config
+          Image:
+            Ref: BashImage
+          Essential: false
+          Command:
+            - -c
+            - echo $SENTRY_CONFIG | base64 -d - | tee /config-sentry/config.yml
+          Environment:
+            - Name: SENTRY_CONFIG
+              Value:
+                Fn::Base64:
+                  Fn::Sub: |
+                    system.secret-key: "${SentrySystemSecretKey}"
+                    system.url-prefix: "https://${SentryDnsRecord}"
+
+                    slack.client-id: "${SentrySlackClientId}"
+                    slack.client-secret: "${SentrySlackClientSecret}"
+                    slack.legacy-app: False
+                    slack.signing-secret: "${SentrySlackSigningSecret}"
+
+                    filestore.backend: 's3'
+                    filestore.options:
+                      bucket_name: "${SentryBucket}"
+                      default_acl: "private"
+                      acl: "private"
+          MountPoints:
+            - ContainerPath: /config-sentry/
+              SourceVolume: sentry-conf-vol
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-region:
+                Ref: AWS::Region
+              awslogs-group:
+                Ref: LogGroup
+              awslogs-stream-prefix: ecs
+        - Name: subscription-consumer-transactions
+          Image:
+            Ref: SentryImage
+          Essential: true
+          DependsOn:
+          - Condition: COMPLETE
+            ContainerName: sentry-config
+          MountPoints:
+            - ContainerPath: /config-sentry/
+              SourceVolume: sentry-conf-vol
+          Entrypoint: ["/bin/bash"]
+          Command:
+            - "-c"
+            - "cp /config-sentry/config.yml /etc/sentry/config.yml && sentry run query-subscription-consumer --commit-batch-size 1 --topic transactions-subscription-results"
+          Secrets:
+            - Name: POSTGRES_PASSWORD
+              ValueFrom:
+                Ref: SecretPostgresPassword
+            - Name: SENTRY_EMAIL_PASSWORD
+              ValueFrom:
+                Ref: SecretSentryEmailPassword
+          Environment:
+            - Name: AWS_DEFAULT_REGION
+              Value:
+                Ref: AWS::Region
+            - name: C_FORCE_ROOT
+              Value: "true"
+            - Name: SNUBA
+              Value: 
+                Fn::Sub: http://${SnubaApiDnsRecord}
+            - Name: REDIS_HOST
+              Value:
+                Fn::GetAtt: ElastiCacheReplicationGroup.PrimaryEndPoint.Address
+            - Name: REDIS_PORT
+              Value: "6379"
+            - Name: CLICKHOUSE_HOST
+              Value:
+                Fn::GetAtt: ElbClickHouse.DNSName 
+            - Name: KAFKA_BROKER_1
+              Value:
+                Fn::GetAtt: KafkaGetBrokersLambdaResult.KafkaBroker1
+            - Name: KAFKA_BROKER_2
+              Value:
+                Fn::GetAtt: KafkaGetBrokersLambdaResult.KafkaBroker2
+            - Name: KAFKA_BROKER_3
+              Value:
+                Fn::GetAtt: KafkaGetBrokersLambdaResult.KafkaBroker3
+            - Name: POSTGRES_HOST
+              Value:
+                Fn::GetAtt: RDSCluster.Endpoint.Address
+            - Name: POSTGRES_PORT
+              Value: "5432"
+            - Name: POSTGRES_DB
+              Value:
+                Ref: PostgresDbName
+            - Name: POSTGRES_USER
+              Value:
+                Ref: PostgresDbUsername
+            - Name: SENTRY_EMAIL_BACKEND
+              Value:
+                Ref: SentryEmailBackend
+            - Name: SENTRY_EMAIL_USERNAME
+              Value:
+                Ref: SentryEmailUsername
+            - Name: SENTRY_EMAIL_PORT
+              Value:
+                Ref: SentryEmailPort
+            - Name: SENTRY_EMAIL_HOST
+              Value:
+                Ref: SentryEmailHost
+            - Name: SENTRY_EMAIL_FROM
+              Value:
+                Ref: SentryEmailFrom
+            - Name: SENTRY_EMAIL_USE_TLS
+              Value:
+                Ref: SentryEmailUseTls
+            - Name: SENTRY_EMAIL_USE_SSL
+              Value:
+                Ref: SentryEmailUseSsl
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-region:
+                Ref: AWS::Region
+              awslogs-group:
+                Ref: LogGroup
+              awslogs-stream-prefix: ecs
+
+  ServiceSentrySubscriptionConsumerTransactions:
+    Type: AWS::ECS::Service
+    Properties:
+      PlatformVersion: '1.4.0'
+      Cluster:
+        Ref: ClusterWorkers
+      TaskDefinition:
+        Ref: TaskDefinitionSentrySubscriptionConsumerTransactions
+      DeploymentConfiguration:
+        MinimumHealthyPercent: 100
+        MaximumPercent: 200
+      DesiredCount:
+        Ref: MinCountSentrySubscriptionConsumerTransactions
+      PropagateTags: SERVICE
+      NetworkConfiguration: 
+        AwsvpcConfiguration:
+          AssignPublicIp: DISABLED
+          Subnets:
+            - Ref: PrivateSubnet1
+            - Ref: PrivateSubnet2
+            - Ref: PrivateSubnet3
+          SecurityGroups:
+            - Ref: Ec2SecurityGroup
+      EnableExecuteCommand: true
+
+  AutoScalingTargetSentrySubscriptionConsumerTransactions:
+    Type: AWS::ApplicationAutoScaling::ScalableTarget
+    Properties:
+      MaxCapacity:
+        Ref: MaxCountSentrySubscriptionConsumerTransactions
+      MinCapacity:
+        Ref: MinCountSentrySubscriptionConsumerTransactions
+      ResourceId:
+        Fn::Sub: service/${ClusterWorkers}/${ServiceSentrySubscriptionConsumerTransactions.Name}
+      RoleARN:
+        Fn::GetAtt: ScalingRole.Arn
+      ScalableDimension: ecs:service:DesiredCount
+      ServiceNamespace: ecs
+
+  CpuAutoScalingPolicySentrySubscriptionConsumerTransactions:
+    Type: AWS::ApplicationAutoScaling::ScalingPolicy
+    Properties:
+      PolicyName:
+        Fn::Sub: ${AWS::StackName}-Cpu-SentrySubscriptionConsumerTransactions
+      PolicyType: TargetTrackingScaling
+      ScalingTargetId:
+        Ref: AutoScalingTargetSentrySubscriptionConsumerTransactions
+      TargetTrackingScalingPolicyConfiguration:
+        DisableScaleIn: false
+        TargetValue: 40
+        ScaleInCooldown: 600
+        ScaleOutCooldown: 60
+        PredefinedMetricSpecification: 
+          PredefinedMetricType: ECSServiceAverageCPUUtilization
+
+  RamAutoScalingPolicySentrySubscriptionConsumerTransactions:
+    Type: AWS::ApplicationAutoScaling::ScalingPolicy
+    Properties:
+      PolicyName:
+        Fn::Sub: ${AWS::StackName}-Ram-SentrySubscriptionConsumerTransactions
+      PolicyType: TargetTrackingScaling
+      ScalingTargetId:
+        Ref: AutoScalingTargetSentrySubscriptionConsumerTransactions
       TargetTrackingScalingPolicyConfiguration:
         DisableScaleIn: false
         TargetValue: 40 

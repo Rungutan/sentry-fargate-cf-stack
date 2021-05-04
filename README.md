@@ -281,8 +281,8 @@ In order to correctly perform the migration, you would have to:
   * Create a bastion host in the desired VPC public subnet. Make sure to use a instance type with enough CPU/Mem/Network bandwidth because the dump can be quite huge on large instances.
   * The bastion host's security group needs to be added to the `Ec2SecurityGroup` as allowed inbound traffic
   * Login to this bastion host. Make sure that `pgsql` and `pv` are installed. 
-    * See [https://techviewleo.com/install-postgresql-12-on-amazon-linux/](here) how to install pgsql 12 on Amazon Linux 2
-    * To install `pv` you have to [https://aws.amazon.com/de/premiumsupport/knowledge-center/ec2-enable-epel/](enable the EPEL) repository.
+    * See [here](https://techviewleo.com/install-postgresql-12-on-amazon-linux/) how to install pgsql 12 on Amazon Linux 2
+    * To install `pv` you have to [enable the EPEL](https://aws.amazon.com/de/premiumsupport/knowledge-center/ec2-enable-epel/) repository.
   * Make a database backup (see [utilities/dump.sh](utilities/dump.sh) script)
   * Run the CloudFormation stack update
   * Import the database dump (see [utilities/import.sh](utilities/import.sh) script)
@@ -290,7 +290,7 @@ In order to correctly perform the migration, you would have to:
 
 ### Using a private ECR Docker image mirror
 
-Since Docker hub has started to enforce API limits for public repos, you may end up in a situation where images cannot be fetched from the public Docker repo. You can set up your own mirror as a private ECR repository and change parameters for the Docker images accordingly. [https://github.com/seatgeek/docker-mirror](Docker-Mirror) can help you in automating the mirroring process.
+Since Docker hub has started to enforce API limits for public repos, you may end up in a situation where images cannot be fetched from the public Docker repo. You can set up your own mirror as a private ECR repository and change parameters for the Docker images accordingly. [Docker-Mirror](https://github.com/seatgeek/docker-mirror) can help you in automating the mirroring process.
 
 #### Example config
 
@@ -320,9 +320,33 @@ repositories:
     max_tag_age: 4w
 ```
 
-####mExample image parameters
+#### Example image parameters
 ```
 ACCOUNTID.dkr.ecr.REGION.amazonaws.com/hub/rungutancommunity/bash:1.13.2
+```
+
+### Connecting to a ECS Fargate container using aws cli exec-command
+
+There is a new [feature](https://aws.amazon.com/de/blogs/containers/new-using-amazon-ecs-exec-access-your-containers-fargate-ec2/) that allows you to connect directly into a container. This can help greatly during debugging or running `snuba` commands for example.
+
+#### Example command to launch a shell in a specific container
+
+```bash
+export AWS_PROFILE=profilename
+export AWS_REGION=eu-central-1
+export ECS_CLUSTER=sentry-ClusterWorkers-xxx123
+export ECS_TASK=taskid
+export ECS_CONTAINER=sentry-snuba-sessions-consumer
+
+aws ecs execute-command --region $AWS_REGION --cluster $ECS_CLUSTER --task $ECS_TASK --container $ECS_CONTAINER --command "/bin/bash" --interactive
+
+
+The Session Manager plugin was installed successfully. Use the AWS CLI to start a session.
+
+
+Starting session with SessionId: ecs-execute-command-1234567890
+root@ip-172-80-12-34:/usr/src/snuba# 
+
 ```
 
 ## Final thoughts
