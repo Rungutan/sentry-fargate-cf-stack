@@ -12,7 +12,7 @@ In short -> When your website brings home its report card.
 
 ## What is Sentry?
 
-Sentry is a service that helps you monitor and fix crashes in realtime. The server is in Python, but it contains a full API for sending events from 
+Sentry is a service that helps you monitor and fix crashes in realtime. The server is in Python, but it contains a full API for sending events from
 any language, in any application.
 
 With Performance Monitoring, teams can trace slow-loading pages back to its API call as well as surface all related errors. That way, Engineering Managers and Developers can resolve bottlenecks and deliver fast, reliable experiences that fit customer demands.
@@ -77,8 +77,8 @@ You can deploy it by following these simple steps:
 2. Click on "Create Stack" and select the template from this repo (file = `cloudformation-template.yaml`)
 3. Fill in **AT LEAST** these parameters and hit "Create stack":
   - SentrySystemSecretKey -> You can use a random UUIDv4 that you can get from https://www.uuidgenerator.net/
-  - InitialAdminUserEmail -> A **very strong** password that you should set for the initial admin user
-  - InitialAdminUserPassword
+  - InitialAdminUserEmail -> An email address for the initial admin
+  - InitialAdminUserPassword -> A **very strong** password that you should set for the initial admin user
   - SslLoadBalancer -> Sentry **cannot** properly work without HTTPS and it is a requirement for this stack
   - SentryEmailUsername -> We recommend SES for that and you can create a user/pass from https://console.aws.amazon.com/ses/home#smtp-settings:
   - SentryEmailPassword -> We recommend SES for that and you can create a user/pass from https://console.aws.amazon.com/ses/home#smtp-settings:
@@ -280,7 +280,7 @@ In order to correctly perform the migration, you would have to:
 
   * Create a bastion host in the desired VPC public subnet. Make sure to use a instance type with enough CPU/Mem/Network bandwidth because the dump can be quite huge on large instances.
   * The bastion host's security group needs to be added to the `Ec2SecurityGroup` as allowed inbound traffic
-  * Login to this bastion host. Make sure that `pgsql` and `pv` are installed. 
+  * Login to this bastion host. Make sure that `pgsql` and `pv` are installed.
     * See [here](https://techviewleo.com/install-postgresql-12-on-amazon-linux/) how to install pgsql 12 on Amazon Linux 2
     * To install `pv` you have to [enable the EPEL](https://aws.amazon.com/de/premiumsupport/knowledge-center/ec2-enable-epel/) repository.
   * Make a database backup (see [utilities/dump.sh](utilities/dump.sh) script)
@@ -345,7 +345,7 @@ The Session Manager plugin was installed successfully. Use the AWS CLI to start 
 
 
 Starting session with SessionId: ecs-execute-command-1234567890
-root@ip-172-80-12-34:/usr/src/snuba# 
+root@ip-172-80-12-34:/usr/src/snuba#
 
 ```
 
