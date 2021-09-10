@@ -613,8 +613,6 @@ Mappings:
       ScaleValue: 2500
     db.r5.12xlarge:
       ScaleValue: 2500
-    db.r5.12xlarge:
-      ScaleValue: 2500
 
 Resources:
 
