@@ -2858,6 +2858,7 @@ Resources:
 
                     processing:
                       enabled: true
+                      geoip_path: "/work/.relay/GeoLite2-City.mmdb"
 
                       kafka_config:
                         - name: "bootstrap.servers"
