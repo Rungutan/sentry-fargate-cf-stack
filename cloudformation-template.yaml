@@ -2608,7 +2608,7 @@ Resources:
         - Name: sentry-web
           Image:
             Ref: SentryImage
-          Entrypoint: ["/bin/bash"]
+          EntryPoint: ["/bin/bash"]
           Command:
             - "-c"
             - "cp /config-sentry/config.yml /etc/sentry/config.yml && sentry run web"
@@ -2633,7 +2633,7 @@ Resources:
             - Name: AWS_DEFAULT_REGION
               Value:
                 Ref: AWS::Region
-            - name: C_FORCE_ROOT
+            - Name: C_FORCE_ROOT
               Value: "true"
             - Name: SNUBA
               Value: 
@@ -3180,7 +3180,7 @@ Resources:
           MountPoints:
             - ContainerPath: /config-sentry/
               SourceVolume: sentry-conf-vol
-          Entrypoint: ["/bin/bash"]
+          EntryPoint: ["/bin/bash"]
           Command:
             - "-c"
             - "cp /config-sentry/config.yml /etc/sentry/config.yml && sentry run cron"
@@ -3195,7 +3195,7 @@ Resources:
             - Name: AWS_DEFAULT_REGION
               Value:
                 Ref: AWS::Region
-            - name: C_FORCE_ROOT
+            - Name: C_FORCE_ROOT
               Value: "true"
             - Name: SNUBA
               Value: 
@@ -3349,7 +3349,7 @@ Resources:
           MountPoints:
             - ContainerPath: /config-sentry/
               SourceVolume: sentry-conf-vol
-          Entrypoint: ["/bin/bash"]
+          EntryPoint: ["/bin/bash"]
           Command:
             - "-c"
             - "cp /config-sentry/config.yml /etc/sentry/config.yml && sentry run ingest-consumer --consumer-type attachments"
@@ -3364,7 +3364,7 @@ Resources:
             - Name: AWS_DEFAULT_REGION
               Value:
                 Ref: AWS::Region
-            - name: C_FORCE_ROOT
+            - Name: C_FORCE_ROOT
               Value: "true"
             - Name: SNUBA
               Value: 
@@ -3564,7 +3564,7 @@ Resources:
           MountPoints:
             - ContainerPath: /config-sentry/
               SourceVolume: sentry-conf-vol
-          Entrypoint: ["/bin/bash"]
+          EntryPoint: ["/bin/bash"]
           Command:
             - "-c"
             - "cp /config-sentry/config.yml /etc/sentry/config.yml && sentry run ingest-consumer --consumer-type events"
@@ -3579,7 +3579,7 @@ Resources:
             - Name: AWS_DEFAULT_REGION
               Value:
                 Ref: AWS::Region
-            - name: C_FORCE_ROOT
+            - Name: C_FORCE_ROOT
               Value: "true"
             - Name: SNUBA
               Value: 
@@ -3779,7 +3779,7 @@ Resources:
           MountPoints:
             - ContainerPath: /config-sentry/
               SourceVolume: sentry-conf-vol
-          Entrypoint: ["/bin/bash"]
+          EntryPoint: ["/bin/bash"]
           Command:
             - "-c"
             - "cp /config-sentry/config.yml /etc/sentry/config.yml && sentry run ingest-consumer --consumer-type transactions"
@@ -3794,7 +3794,7 @@ Resources:
             - Name: AWS_DEFAULT_REGION
               Value:
                 Ref: AWS::Region
-            - name: C_FORCE_ROOT
+            - Name: C_FORCE_ROOT
               Value: "true"
             - Name: SNUBA
               Value: 
@@ -3994,7 +3994,7 @@ Resources:
           MountPoints:
             - ContainerPath: /config-sentry/
               SourceVolume: sentry-conf-vol
-          Entrypoint: ["/bin/bash"]
+          EntryPoint: ["/bin/bash"]
           Command:
             - "-c"
             - "cp /config-sentry/config.yml /etc/sentry/config.yml && sentry run post-process-forwarder --commit-batch-size 1"
@@ -4009,7 +4009,7 @@ Resources:
             - Name: AWS_DEFAULT_REGION
               Value:
                 Ref: AWS::Region
-            - name: C_FORCE_ROOT
+            - Name: C_FORCE_ROOT
               Value: "true"
             - Name: SNUBA
               Value: 
@@ -4163,7 +4163,7 @@ Resources:
         - Name: sentry-snuba-sessions-consumer
           Image:
             Ref: SnubaImage
-          Entrypoint: ["snuba", "consumer", "--storage", "sessions_raw", "--auto-offset-reset=latest", "--max-batch-time-ms", "750"]
+          EntryPoint: ["snuba", "consumer", "--storage", "sessions_raw", "--auto-offset-reset=latest", "--max-batch-time-ms", "750"]
           Secrets:
             - Name: POSTGRES_PASSWORD
               ValueFrom:
@@ -4331,7 +4331,7 @@ Resources:
         - Name: sentry-snuba-outcomes-consumer
           Image:
             Ref: SnubaImage
-          Entrypoint: ["snuba", "consumer", "--storage", "outcomes_raw", "--auto-offset-reset=earliest", "--max-batch-time-ms", "750"]
+          EntryPoint: ["snuba", "consumer", "--storage", "outcomes_raw", "--auto-offset-reset=earliest", "--max-batch-time-ms", "750"]
           Secrets:
             - Name: POSTGRES_PASSWORD
               ValueFrom:
@@ -4499,7 +4499,7 @@ Resources:
         - Name: sentry-snuba-subscription-consumer-transactions
           Image:
             Ref: SnubaImage
-          Entrypoint: ["snuba", "subscriptions", "--auto-offset-reset=latest", "--consumer-group=snuba-transactions-subscriptions-consumers", "--topic=events", "--result-topic=transactionss-subscription-results", "--dataset=transactions", "--commit-log-topic=snuba-commit-log", "--commit-log-group=transactions_group", "--delay-seconds=60", "--schedule-ttl=60"]
+          EntryPoint: ["snuba", "subscriptions", "--auto-offset-reset=latest", "--consumer-group=snuba-transactions-subscriptions-consumers", "--topic=events", "--result-topic=transactionss-subscription-results", "--dataset=transactions", "--commit-log-topic=snuba-commit-log", "--commit-log-group=transactions_group", "--delay-seconds=60", "--schedule-ttl=60"]
           Secrets:
             - Name: POSTGRES_PASSWORD
               ValueFrom:
@@ -4667,7 +4667,7 @@ Resources:
         - Name: sentry-snuba-transactions-consumer
           Image:
             Ref: SnubaImage
-          Entrypoint: ["snuba", "consumer", "--storage", "transactions", "--consumer-group", "transactions_group", "--auto-offset-reset=latest", "--max-batch-time-ms", "750", "--commit-log-topic=snuba-commit-log"]
+          EntryPoint: ["snuba", "consumer", "--storage", "transactions", "--consumer-group", "transactions_group", "--auto-offset-reset=latest", "--max-batch-time-ms", "750", "--commit-log-topic=snuba-commit-log"]
           Secrets:
             - Name: POSTGRES_PASSWORD
               ValueFrom:
@@ -4836,7 +4836,7 @@ Resources:
         - Name: sentry-snuba-replacer
           Image:
             Ref: SnubaImage
-          Entrypoint: ["snuba", "replacer", "--storage", "errors", "--auto-offset-reset=latest", "--max-batch-size", "3"]
+          EntryPoint: ["snuba", "replacer", "--storage", "errors", "--auto-offset-reset=latest", "--max-batch-size", "3"]
           Secrets:
             - Name: POSTGRES_PASSWORD
               ValueFrom:
@@ -5004,7 +5004,7 @@ Resources:
         - Name: sentry-snuba-subscription-consumer-events
           Image:
             Ref: SnubaImage
-          Entrypoint: ["snuba", "subscriptions", "--auto-offset-reset=latest", "--consumer-group=snuba-events-subscriptions-consumers", "--topic=events", "--result-topic=events-subscription-results", "--dataset=events", "--commit-log-topic=snuba-commit-log", "--commit-log-group=snuba-consumers", "--delay-seconds=60", "--schedule-ttl=60"]
+          EntryPoint: ["snuba", "subscriptions", "--auto-offset-reset=latest", "--consumer-group=snuba-events-subscriptions-consumers", "--topic=events", "--result-topic=events-subscription-results", "--dataset=events", "--commit-log-topic=snuba-commit-log", "--commit-log-group=snuba-consumers", "--delay-seconds=60", "--schedule-ttl=60"]
           Secrets:
             - Name: POSTGRES_PASSWORD
               ValueFrom:
@@ -5172,7 +5172,7 @@ Resources:
         - Name: sentry-snuba-consumer
           Image:
             Ref: SnubaImage
-          Entrypoint: ["snuba", "consumer", "--storage", "errors", "--auto-offset-reset=latest", "--max-batch-time-ms", "750"]
+          EntryPoint: ["snuba", "consumer", "--storage", "errors", "--auto-offset-reset=latest", "--max-batch-time-ms", "750"]
           Secrets:
             - Name: POSTGRES_PASSWORD
               ValueFrom:
@@ -5386,7 +5386,7 @@ Resources:
           MountPoints:
             - ContainerPath: /config-sentry/
               SourceVolume: sentry-conf-vol
-          Entrypoint: ["/bin/bash"]
+          EntryPoint: ["/bin/bash"]
           Command:
             - "-c"
             - "cp /config-sentry/config.yml /etc/sentry/config.yml && sentry run worker -c 4"
@@ -5401,7 +5401,7 @@ Resources:
             - Name: AWS_DEFAULT_REGION
               Value:
                 Ref: AWS::Region
-            - name: C_FORCE_ROOT
+            - Name: C_FORCE_ROOT
               Value: "true"
             - Name: SNUBA
               Value: 
@@ -5597,7 +5597,7 @@ Resources:
           MountPoints:
             - ContainerPath: /config-sentry/
               SourceVolume: sentry-conf-vol
-          Entrypoint: ["/bin/bash"]
+          EntryPoint: ["/bin/bash"]
           Command:
             - "-c"
             - "cp /config-sentry/config.yml /etc/sentry/config.yml && sentry run query-subscription-consumer --commit-batch-size 1 --topic events-subscription-results"
@@ -5612,7 +5612,7 @@ Resources:
             - Name: AWS_DEFAULT_REGION
               Value:
                 Ref: AWS::Region
-            - name: C_FORCE_ROOT
+            - Name: C_FORCE_ROOT
               Value: "true"
             - Name: SNUBA
               Value: 
@@ -5808,7 +5808,7 @@ Resources:
           MountPoints:
             - ContainerPath: /config-sentry/
               SourceVolume: sentry-conf-vol
-          Entrypoint: ["/bin/bash"]
+          EntryPoint: ["/bin/bash"]
           Command:
             - "-c"
             - "cp /config-sentry/config.yml /etc/sentry/config.yml && sentry run query-subscription-consumer --commit-batch-size 1 --topic transactions-subscription-results"
@@ -5823,7 +5823,7 @@ Resources:
             - Name: AWS_DEFAULT_REGION
               Value:
                 Ref: AWS::Region
-            - name: C_FORCE_ROOT
+            - Name: C_FORCE_ROOT
               Value: "true"
             - Name: SNUBA
               Value: 
@@ -5973,7 +5973,7 @@ Resources:
         - Name: clickhouse-client
           Image:
             Ref: ClickHouseImage
-          Entrypoint: ["/bin/bash"]
+          EntryPoint: ["/bin/bash"]
           Command:
             - "-ec"
             - Fn::Sub: |
@@ -5992,7 +5992,7 @@ Resources:
             - Name: AWS_DEFAULT_REGION
               Value:
                 Ref: AWS::Region
-            - name: C_FORCE_ROOT
+            - Name: C_FORCE_ROOT
               Value: "true"
             - Name: SNUBA
               Value: 
@@ -6136,7 +6136,7 @@ Resources:
           MountPoints:
             - ContainerPath: /config-sentry/
               SourceVolume: sentry-conf-vol
-          Entrypoint: ["/bin/bash"]
+          EntryPoint: ["/bin/bash"]
           Command:
             - "-c"
             - "cp /config-sentry/config.yml /etc/sentry/config.yml && sentry upgrade"
@@ -6151,7 +6151,7 @@ Resources:
             - Name: AWS_DEFAULT_REGION
               Value:
                 Ref: AWS::Region
-            - name: C_FORCE_ROOT
+            - Name: C_FORCE_ROOT
               Value: "true"
             - Name: SNUBA
               Value: 
@@ -6252,7 +6252,7 @@ Resources:
         - Name: sentry-snuba-bootstrap
           Image:
             Ref: SnubaImage
-          Entrypoint: ["snuba", "bootstrap", "--force"]
+          EntryPoint: ["snuba", "bootstrap", "--force"]
           Secrets:
             - Name: POSTGRES_PASSWORD
               ValueFrom:
@@ -6369,7 +6369,7 @@ Resources:
         - Name: sentry-snuba-migrations
           Image:
             Ref: SnubaImage
-          Entrypoint: ["/usr/src/snuba/docker_entrypoint.sh"]
+          EntryPoint: ["/usr/src/snuba/docker_entrypoint.sh"]
           Command: ["snuba", "migrations", "migrate", "--force"]
           Secrets:
             - Name: POSTGRES_PASSWORD
@@ -6534,7 +6534,7 @@ Resources:
           MountPoints:
             - ContainerPath: /config-sentry/
               SourceVolume: sentry-conf-vol
-          Entrypoint: ["/bin/bash"]
+          EntryPoint: ["/bin/bash"]
           Command:
             - "-c"
             - Fn::Sub: "cp /config-sentry/config.yml /etc/sentry/config.yml && (sentry createuser --no-input --superuser --email \"${InitialAdminUserEmail}\" --password \"${!INITIAL_ADMIN_USER_PASSWORD}\" || true)"
@@ -6552,7 +6552,7 @@ Resources:
             - Name: AWS_DEFAULT_REGION
               Value:
                 Ref: AWS::Region
-            - name: C_FORCE_ROOT
+            - Name: C_FORCE_ROOT
               Value: "true"
             - Name: SNUBA
               Value: 
