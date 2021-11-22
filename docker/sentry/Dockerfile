@@ -1,4 +1,4 @@
-FROM getsentry/sentry:21.6.2
+FROM getsentry/sentry:21.10.0
 
 RUN  apt-get update && \
         apt-get install -y build-essential lcov valgrind libldap2-dev libsasl2-dev && \
@@ -6,4 +6,4 @@ RUN  apt-get update && \
 
 COPY sentry.conf.py /etc/sentry/sentry.conf.py
 
-RUN  mkdir -p /geoip/
+COPY GeoLite2-City.mmdb /etc/sentry/GeoLite2-City.mmdb

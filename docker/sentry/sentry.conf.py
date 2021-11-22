@@ -308,3 +308,8 @@ else:
     SENTRY_OPTIONS["mail.backend"] = "dummy"
 
 
+#######################
+# MaxMind Integration #
+#######################
+
+GEOIP_PATH_MMDB = '/etc/sentry/GeoLite2-City.mmdb'
